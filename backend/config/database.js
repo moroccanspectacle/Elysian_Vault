@@ -21,12 +21,23 @@ if (process.env.DATABASE_URL) {
 
   if (dbSslCaCert && dbSslCaCert.trim() !== '') {
     console.log('Condition (dbSslCaCert && dbSslCaCert.trim() !== \'\') is TRUE. Attempting to use provided CA.');
-    const processedCaCert = dbSslCaCert.replace(/\\n/g, '\n');
+    let certToUse = dbSslCaCert;
+    // Attempt to detect if it's Base64 and decode
+    if (!dbSslCaCert.includes('-----BEGIN CERTIFICATE-----')) { // A simple check if it's not raw
+        try {
+            console.log('DB_SSL_CA_CERT does not look like a raw cert, attempting Base64 decode.');
+            certToUse = Buffer.from(dbSslCaCert, 'base64').toString('ascii');
+            console.log('Base64 decoding successful.');
+        } catch (e) {
+            console.error('Base64 decoding failed, using raw value (which might be incorrect):', e);
+        }
+    }
+    const processedCaCert = certToUse.replace(/\\n/g, '\n'); // Ensure newlines if raw cert had escaped ones
     sslConfig = {
       rejectUnauthorized: true,
       ca: processedCaCert
     };
-    console.log('Using provided DB_SSL_CA_CERT for SSL connection with verification. rejectUnauthorized is TRUE.');
+    console.log('Using processed DB_SSL_CA_CERT for SSL connection with verification. rejectUnauthorized is TRUE.');
   } else {
     console.log('Condition (dbSslCaCert && dbSslCaCert.trim() !== \'\') is FALSE. Falling back.');
     sslConfig = {
