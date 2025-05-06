@@ -4,6 +4,7 @@ const verifyToken = require('./routes/verifyToken');
 const cors = require('cors');
 const sequelize = require('./config/database'); // Make sure this is imported
 const path = require('path'); // Import path module
+const fs = require('fs'); // <<<<------ ADD THIS LINE
 
 dotenv.config();
 
@@ -86,42 +87,84 @@ app.use('/api/share', require('./routes/publicShare'));
 // Serve static files
 app.use('/profile-images', express.static(path.join(__dirname, 'uploads/profile-images')));
 
-// Sync all models with database
-sequelize.sync({ alter: true })
-  .then(() => {
-    console.log('Database synced');
-    
-    // Start server only after sync is complete
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      scheduleFileCleanup(); // Start scheduled tasks
-    });
-  })
-  .catch(err => {
-    console.error('Error syncing database:', err);
-  });
-
 // Add this at the end of your backend/index.js file, after all other routes
 // Serve static files from React's build folder in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist'))); // Changed 'build' to 'dist'
+  const frontendDistPath = path.join(__dirname, '../frontend/dist');
+  const frontendIndexPath = path.join(frontendDistPath, 'index.html');
+
+  console.log(`[SERVER_LOG] Running in production mode.`);
+  console.log(`[SERVER_LOG] __dirname: ${__dirname}`);
+  console.log(`[SERVER_LOG] Calculated frontendDistPath: ${frontendDistPath}`);
+  console.log(`[SERVER_LOG] Calculated frontendIndexPath: ${frontendIndexPath}`);
+
+  if (fs.existsSync(frontendDistPath)) {
+    console.log(`[SERVER_LOG] SUCCESS: Directory ${frontendDistPath} EXISTS.`);
+    if (fs.existsSync(frontendIndexPath)) {
+      console.log(`[SERVER_LOG] SUCCESS: File ${frontendIndexPath} EXISTS.`);
+    } else {
+      console.error(`[SERVER_LOG] ERROR: File ${frontendIndexPath} DOES NOT EXIST.`);
+      try {
+        const filesInDist = fs.readdirSync(frontendDistPath);
+        console.log(`[SERVER_LOG] Contents of ${frontendDistPath}: [${filesInDist.join(', ')}]`);
+      } catch (e) {
+        console.error(`[SERVER_LOG] Error reading contents of ${frontendDistPath}:`, e);
+      }
+    }
+  } else {
+    console.error(`[SERVER_LOG] ERROR: Directory ${frontendDistPath} DOES NOT EXIST.`);
+    // Check if frontend directory itself exists
+    const frontendPath = path.join(__dirname, '../frontend');
+    if(fs.existsSync(frontendPath)) {
+        console.log(`[SERVER_LOG] Parent frontend directory ${frontendPath} EXISTS. Contents: [${fs.readdirSync(frontendPath).join(', ')}]`);
+    } else {
+        console.error(`[SERVER_LOG] ERROR: Parent frontend directory ${frontendPath} DOES NOT EXIST.`);
+    }
+  }
+  app.use(express.static(frontendDistPath));
 }
 
 // The "catch all" handler for any request that doesn't match one above
 // Send back React's index.html file
 app.get('*', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html')); // Changed 'build' to 'dist'
+    const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+    console.log(`[SERVER_LOG] Catch-all: Attempting to send file: ${indexPath}`);
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error(`[SERVER_LOG] Catch-all: Error sending file ${indexPath}:`, err);
+        // Don't send a JSON error here, as the client expects HTML or an asset
+        // Let the browser handle the 404 if sendFile fails to find it.
+        // res.status(err.status || 500).end(); // This might be too aggressive
+         if (!res.headersSent) {
+            res.status(404).send(`File not found: ${req.path}`);
+         }
+      } else {
+        console.log(`[SERVER_LOG] Catch-all: Successfully sent ${indexPath} for ${req.path}`);
+      }
+    });
   } else {
-    // Don't redirect API routes
     if (req.url.startsWith('/api/')) {
       res.status(404).json({ error: 'API endpoint not found' });
     } else {
-      // Only redirect non-API routes to frontend
+      console.log(`[SERVER_LOG] Development mode: Redirecting ${req.originalUrl} to frontend (localhost:3001)`);
       res.redirect('http://localhost:3001' + req.originalUrl);
     }
   }
 });
+
+// Sync all models with database
+sequelize.sync({ alter: true })
+  .then(() => {
+    console.log('[SERVER_LOG] Database synced');
+    app.listen(PORT, () => {
+      console.log(`[SERVER_LOG] Server is running on port ${PORT}`);
+      scheduleFileCleanup(); // Start scheduled tasks
+    });
+  })
+  .catch(err => {
+    console.error('[SERVER_LOG] Error syncing database:', err);
+  });
 
 // Add near the bottom of the file
 const { scheduleFileCleanup } = require('./services/fileExpirationService');
