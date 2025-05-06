@@ -104,14 +104,14 @@ sequelize.sync({ alter: true })
 // Add this at the end of your backend/index.js file, after all other routes
 // Serve static files from React's build folder in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/build')));
+  app.use(express.static(path.join(__dirname, '../frontend/dist'))); // Changed 'build' to 'dist'
 }
 
 // The "catch all" handler for any request that doesn't match one above
 // Send back React's index.html file
 app.get('*', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
-    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html')); // Changed 'build' to 'dist'
   } else {
     // Don't redirect API routes
     if (req.url.startsWith('/api/')) {
