@@ -8,10 +8,8 @@ let sequelize;
 if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    protocol: 'postgres',
     dialectOptions: {
       ssl: {
-        require: true, // Required for secure connections on many platforms
         rejectUnauthorized: false // Adjust as needed based on DO's SSL setup
       }
     },
