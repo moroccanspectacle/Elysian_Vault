@@ -6,12 +6,29 @@ let sequelize;
 
 // Check if DATABASE_URL is provided (like on DigitalOcean)
 if (process.env.DATABASE_URL) {
+  const dbSslCaCert = process.env.DB_SSL_CA_CERT;
+  let sslConfig = {};
+
+  if (dbSslCaCert) {
+    // If CA cert is provided, use it and require proper verification
+    sslConfig = {
+      rejectUnauthorized: true, // We now WANT to verify against the provided CA
+      ca: dbSslCaCert.replace(/\\n/g, '\n') // Replace escaped newlines if necessary
+    };
+    console.log('Using provided DB_SSL_CA_CERT for SSL connection.');
+  } else {
+    // Fallback if CA cert is NOT provided (this might still lead to errors on DO)
+    // This was the previous attempt.
+    sslConfig = {
+      rejectUnauthorized: false
+    };
+    console.warn('DB_SSL_CA_CERT not provided. Attempting SSL connection with rejectUnauthorized: false.');
+  }
+
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     dialectOptions: {
-      ssl: {
-        rejectUnauthorized: false // Adjust as needed based on DO's SSL setup
-      }
+      ssl: sslConfig
     },
     logging: false // Optional: disable logging in production
   });
