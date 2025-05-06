@@ -9,20 +9,32 @@ if (process.env.DATABASE_URL) {
   const dbSslCaCert = process.env.DB_SSL_CA_CERT;
   let sslConfig = {};
 
-  if (dbSslCaCert && dbSslCaCert.trim() !== '') { // Also check if the cert content is not empty
-    // If CA cert is provided, use it and require proper verification
+  console.log('--- DATABASE SSL CONFIGURATION ---');
+  console.log(`DATABASE_URL detected: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
+  console.log(`DB_SSL_CA_CERT raw value: [${dbSslCaCert}]`); // Log the raw value
+  console.log(`Is DB_SSL_CA_CERT a string? ${typeof dbSslCaCert === 'string'}`);
+  if (typeof dbSslCaCert === 'string') {
+    console.log(`DB_SSL_CA_CERT trimmed length: ${dbSslCaCert.trim().length}`);
+    console.log(`DB_SSL_CA_CERT starts with: [${dbSslCaCert.substring(0, 30)}]`); // Log the beginning
+  }
+
+  if (dbSslCaCert && dbSslCaCert.trim() !== '') {
+    console.log('Condition (dbSslCaCert && dbSslCaCert.trim() !== \'\') is TRUE. Attempting to use provided CA.');
+    const processedCaCert = dbSslCaCert.replace(/\\n/g, '\n');
     sslConfig = {
-      rejectUnauthorized: true, // <<<<------ CORRECT THIS LINE
-      ca: dbSslCaCert.replace(/\\n/g, '\n')
+      rejectUnauthorized: true,
+      ca: processedCaCert
     };
-    console.log('Using provided DB_SSL_CA_CERT for SSL connection with verification.');
+    console.log('Using provided DB_SSL_CA_CERT for SSL connection with verification. rejectUnauthorized is TRUE.');
+    // console.log(`Processed CA Cert for use: [${processedCaCert}]`); // Uncomment if you need to see the full cert in logs (can be very long)
   } else {
-    // Fallback if CA cert is NOT provided or is empty
+    console.log('Condition (dbSslCaCert && dbSslCaCert.trim() !== \'\') is FALSE. Falling back.');
     sslConfig = {
-      rejectUnauthorized: false // This is the "trust anything" mode
+      rejectUnauthorized: false
     };
     console.warn('DB_SSL_CA_CERT not provided or empty. Attempting SSL connection with rejectUnauthorized: false.');
   }
+  console.log('--- END DATABASE SSL CONFIGURATION ---');
 
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
@@ -48,7 +60,8 @@ sequelize.authenticate()
     .catch(err => {
         console.error('Unable to connect to the database:', err);
         if (process.env.DATABASE_URL && err.parent && err.parent.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
-            console.error("SELF_SIGNED_CERT_IN_CHAIN error. Ensure DB_SSL_CA_CERT environment variable is correctly set in DigitalOcean with the CA certificate content and that it's not empty.");
+            console.error("SELF_SIGNED_CERT_IN_CHAIN error. Current sslConfig used:", JSON.stringify(sslConfig));
+            console.error("Ensure DB_SSL_CA_CERT environment variable is correctly set in DigitalOcean with the NEW CA certificate content from the NEW cluster and that it's not empty or malformed.");
         }
     });
 
