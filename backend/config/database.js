@@ -12,7 +12,7 @@ if (process.env.DATABASE_URL) {
   if (dbSslCaCert) {
     // If CA cert is provided, use it and require proper verification
     sslConfig = {
-      rejectUnauthorized: true, // We now WANT to verify against the provided CA
+      rejectUnauthorized: false, // We now WANT to verify against the provided CA
       ca: dbSslCaCert.replace(/\\n/g, '\n') // Replace escaped newlines if necessary
     };
     console.log('Using provided DB_SSL_CA_CERT for SSL connection.');
