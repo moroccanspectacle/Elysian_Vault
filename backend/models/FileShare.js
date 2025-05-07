@@ -46,7 +46,7 @@ const FileShare = sequelize.define('FileShare', {
         }
     },
     createdById: {
-        type: DataTypes.INTEGER,  // Changed from UUID to INTEGER to match User.id
+        type: DataTypes.INTEGER,
         references: {
             model: User,
             key: 'id'
@@ -54,18 +54,18 @@ const FileShare = sequelize.define('FileShare', {
     }
 });
 
-// Fix the associations by explicitly specifying the foreign key
+
 FileShare.belongsTo(File, {
-  foreignKey: 'fileId',  // Explicitly use lowercase 'fileId'
+  foreignKey: 'fileId', 
   onDelete: 'CASCADE'
 });
 
 File.hasMany(FileShare, {
-  foreignKey: 'fileId',  // Use the same lowercase 'fileId'
+  foreignKey: 'fileId', 
   onDelete: 'CASCADE'
 });
 
-// Fix the user association too
+
 FileShare.belongsTo(User, { 
   foreignKey: 'createdById' 
 });

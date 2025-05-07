@@ -23,7 +23,7 @@ const SystemSettings = sequelize.define('SystemSettings', {
     type: DataTypes.INTEGER,
     defaultValue: 5000 // GB
   },
-  // Add these fields to your SystemSettings model
+
   vaultPermissions: {
     type: DataTypes.JSONB,
     defaultValue: {
@@ -31,8 +31,6 @@ const SystemSettings = sequelize.define('SystemSettings', {
       quotas: {
         super_admin: -1, // Unlimited
         admin: 10737418240, // 10GB
-        manager: 5368709120, // 5GB
-        power_user: 3221225472, // 3GB
         user: 1073741824, // 1GB
       },
       // Department-specific settings

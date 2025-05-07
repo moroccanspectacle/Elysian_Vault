@@ -3,9 +3,9 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 let sequelize;
-let deployedSslConfig; // Variable to store sslConfig for logging if deployed
+let deployedSslConfig; 
 
-// Check if DATABASE_URL is provided (like on DigitalOcean)
+// Check if DATABASE_URL is provided
 if (process.env.DATABASE_URL) {
   const dbSslCaCert = process.env.DB_SSL_CA_CERT;
   let sslConfig = {}; // This is local to this block
@@ -22,8 +22,7 @@ if (process.env.DATABASE_URL) {
   if (dbSslCaCert && dbSslCaCert.trim() !== '') {
     console.log('Condition (dbSslCaCert && dbSslCaCert.trim() !== \'\') is TRUE. Attempting to use provided CA.');
     let certToUse = dbSslCaCert;
-    // Attempt to detect if it's Base64 and decode
-    if (!dbSslCaCert.includes('-----BEGIN CERTIFICATE-----')) { // A simple check if it's not raw
+    if (!dbSslCaCert.includes('-----BEGIN CERTIFICATE-----')) {
         try {
             console.log('DB_SSL_CA_CERT does not look like a raw cert, attempting Base64 decode.');
             certToUse = Buffer.from(dbSslCaCert, 'base64').toString('ascii');
@@ -32,7 +31,7 @@ if (process.env.DATABASE_URL) {
             console.error('Base64 decoding failed, using raw value (which might be incorrect):', e);
         }
     }
-    const processedCaCert = certToUse.replace(/\\n/g, '\n'); // Ensure newlines if raw cert had escaped ones
+    const processedCaCert = certToUse.replace(/\\n/g, '\n');
     sslConfig = {
       rejectUnauthorized: true,
       ca: processedCaCert
@@ -46,12 +45,12 @@ if (process.env.DATABASE_URL) {
     console.warn('DB_SSL_CA_CERT not provided or empty. Attempting SSL connection with rejectUnauthorized: false.');
   }
   console.log('--- END DATABASE SSL CONFIGURATION ---');
-  deployedSslConfig = sslConfig; // Store it for logging
+  deployedSslConfig = sslConfig; 
 
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     dialectOptions: {
-      ssl: sslConfig // Use the locally scoped sslConfig
+      ssl: sslConfig 
     },
     logging: false
   });
@@ -72,7 +71,6 @@ sequelize.authenticate()
     .catch(err => {
         console.error('Unable to connect to the database:', err);
         if (process.env.DATABASE_URL && err.parent && err.parent.code === 'SELF_SIGNED_CERT_IN_CHAIN') {
-            // Log the sslConfig that was used for the deployed setup
             console.error("SELF_SIGNED_CERT_IN_CHAIN error. Current sslConfig used for deployed setup:", JSON.stringify(deployedSslConfig));
             console.error("Ensure DB_SSL_CA_CERT environment variable is correctly set in DigitalOcean with the NEW CA certificate content from the NEW cluster and that it's not empty or malformed.");
         }

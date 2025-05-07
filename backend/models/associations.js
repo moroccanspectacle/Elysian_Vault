@@ -4,9 +4,9 @@ const User = require('./User');
 const TeamMember = require('./TeamMember');
 const File = require('./File');
 
-// Set up associations
+// 
 module.exports = function setupAssociations() {
-  // User <-> Team many-to-many relationship through TeamMember
+  // User and Team many-to-many relationship through TeamMember
   User.belongsToMany(Team, { through: TeamMember, foreignKey: 'userId' });
   Team.belongsToMany(User, { through: TeamMember, foreignKey: 'teamId' });
   

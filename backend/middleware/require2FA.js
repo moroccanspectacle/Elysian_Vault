@@ -10,7 +10,7 @@ async function require2FA(req, res, next) {
         
         const teamId = req.params.id || req.body.teamId;
         
-        // Check if this operation requires 2FA
+        //  if operation requires 2FA
         const teamSettings = await TeamSettings.findOne({
             where: { teamId: teamId }
         });
@@ -20,7 +20,7 @@ async function require2FA(req, res, next) {
             return next();
         }
         
-        // Check for the sensitiveOpToken in headers
+        // sensitiveOpToken in headers
         const sensitiveOpToken = req.headers['sensitive-op-token'];
         if (!sensitiveOpToken) {
             return res.status(403).json({

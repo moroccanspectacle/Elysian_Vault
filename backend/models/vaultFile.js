@@ -46,7 +46,7 @@ const VaultFile = sequelize.define('VaultFile', {
         type: DataTypes.DATE,
         allowNull: true,
     },
-    accessPin: { // Add this field
+    accessPin: {
         type: DataTypes.STRING,
         allowNull: true, // Allow null initially, will be set when added
     },
@@ -69,8 +69,8 @@ const VaultFile = sequelize.define('VaultFile', {
     }
 });
 
-// Explicitly define the foreign key for the association
-VaultFile.belongsTo(File, { foreignKey: 'fileId' }); // Use the lowercase 'fileId' column you defined
-File.hasOne(VaultFile, { foreignKey: 'fileId' }); // Also specify it for the reverse association
+
+VaultFile.belongsTo(File, { foreignKey: 'fileId' });
+File.hasOne(VaultFile, { foreignKey: 'fileId' }); 
 
 module.exports = VaultFile;

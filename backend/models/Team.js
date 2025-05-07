@@ -17,7 +17,7 @@ const Team = sequelize.define('Team', {
         allowNull: true
     },
     ownerId:{
-        type: DataTypes.INTEGER,  // Changed from UUID to INTEGER to match User.id
+        type: DataTypes.INTEGER,
         references: {
             model: User,
             key: 'id'

@@ -12,7 +12,7 @@ const pipeline = promisify(stream.pipeline);
 const generateFileHash = async (filePath) => {
     console.log(`Starting hash generation for file: ${filePath}`);
     
-    // Check if the file exists first
+    // Check if file exists
     if (!fs.existsSync(filePath)) {
         throw new Error(`File not found at path: ${filePath}`);
     }
@@ -21,7 +21,7 @@ const generateFileHash = async (filePath) => {
         const hash = crypto.createHash('sha256');
         const fileStream = fs.createReadStream(filePath);
         
-        // Use a Promise to handle the hash generation
+        // Promise to handle the hash generation
         return new Promise((resolve, reject) => {
             fileStream.on('error', (err) => {
                 console.error('File stream error:', err);

@@ -23,7 +23,7 @@ const Department = sequelize.define('Department', {
   },
   vaultQuotaBonus: {
     type: DataTypes.BIGINT,
-    defaultValue: 0 // Additional storage on top of role-based quota
+    defaultValue: 0
   },
   // Department-specific settings
   requireMfa: {

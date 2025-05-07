@@ -73,7 +73,7 @@ const File = sequelize.define('File',
         },
         expiryDate: {
             type: DataTypes.DATE,
-            allowNull: true // Allow null since not all files need expiration dates
+            allowNull: true // cuz not all files will have an expiry date
         }
 });
 

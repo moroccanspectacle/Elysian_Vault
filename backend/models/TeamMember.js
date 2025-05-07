@@ -21,7 +21,7 @@ const TeamMember = sequelize.define('TeamMember', {
     },
     email: {
         type: DataTypes.STRING,
-        allowNull: true // For storing email of users who aren't registered yet
+        allowNull: true
     },
     role: {
         type: DataTypes.ENUM('owner', 'admin', 'member'),
