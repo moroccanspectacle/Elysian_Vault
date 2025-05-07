@@ -5,19 +5,19 @@ const User = require('../models/User');
 const File = require('../models/File');
 const Activity_Log = require('../models/Activity_Log');
 const Team = require('../models/Team');
-const SystemSettings = require('../models/SystemSettings'); // Added SystemSettings model
-const Department = require('../models/Department'); // Added Department model
+const SystemSettings = require('../models/SystemSettings');
+const Department = require('../models/Department'); 
 const { Op } = require('sequelize');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const sequelize = require('sequelize');
-const nodemailer = require('nodemailer'); // Added nodemailer
+const nodemailer = require('nodemailer');
 const { logActivity } = require('../services/logger');
 
 // Apply middleware to all admin routes
 router.use(verifyToken, isAdmin);
 
-// GET /api/admin/users - List all users with pagination
+// List all users with pagination
 router.get('/users', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -57,7 +57,7 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// Create a new user (admin only)
+// Create a new user
 router.post('/users', async (req, res) => {
   try {
     const { username, email } = req.body;
@@ -83,7 +83,7 @@ router.post('/users', async (req, res) => {
       });
     }
     
-    // Generate a secure password reset token
+    //  secure password reset token
     const passwordSetupToken = crypto.randomBytes(32).toString('hex');
     const tokenExpiry = Date.now() + 86400000; // 24 hours
     
@@ -96,7 +96,7 @@ router.post('/users', async (req, res) => {
     const user = await User.create({
       username,
       email,
-      password: hashedTempPassword, // Add this line
+      password: hashedTempPassword,
       passwordSetupToken,
       passwordSetupTokenExpiry: tokenExpiry,
       role: 'user',
@@ -104,8 +104,6 @@ router.post('/users', async (req, res) => {
       storageQuota: 5 * 1024 * 1024 * 1024, // 5GB default or get from system settings
       currentUsage: 0
     });
-    
-    // Configure nodemailer with your email service
     const transporter = nodemailer.createTransport({
       service: process.env.EMAIL_SERVICE || 'gmail',
       auth: {
@@ -137,7 +135,7 @@ router.post('/users', async (req, res) => {
     // Log the action
     await Activity_Log.create({
       userId: req.user.id,
-      action: 'user_management', // Changed from 'create_user'
+      action: 'user_management',
       details: `Admin created user ${username} (${email})`
     });
     
@@ -151,7 +149,7 @@ router.post('/users', async (req, res) => {
   }
 });
 
-// PUT /api/admin/users/:id - Update user details
+// Update user details
 router.put('/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
@@ -174,20 +172,18 @@ router.put('/users/:id', async (req, res) => {
     if (role && user.role !== 'super_admin') updateData.role = role;
     if (status && user.role !== 'super_admin') updateData.status = status;
 
-    // --- Add this check for departmentId ---
+    
     // Check if departmentId is explicitly provided in the request body.
-    // Allows setting it to a value OR explicitly to null.
     if (departmentId !== undefined) {
-      // Ensure null is passed correctly if intended, otherwise parse the ID.
+      // Ensure null is passed correctly
       updateData.departmentId = departmentId === null ? null : parseInt(departmentId, 10);
       // Basic validation if ID is not null
       if (updateData.departmentId !== null && isNaN(updateData.departmentId)) {
          return res.status(400).json({ error: 'Invalid Department ID format' });
       }
     }
-    // --- End Add ---
 
-    // Only update if there's actually data to change
+    // Only update if there's data to change
     if (Object.keys(updateData).length > 0) {
       await user.update(updateData);
       // Log activity
@@ -203,24 +199,23 @@ router.put('/users/:id', async (req, res) => {
   }
 });
 
-// --- Add New Route: GET /api/admin/files/:id ---
+// get all files in the system
 router.get('/files/:id', async (req, res) => {
   try {
     const fileId = req.params.id;
 
     const file = await File.findOne({
-      where: { id: fileId }, // Find by ID, regardless of isDeleted for admin view
+      where: { id: fileId }, // Find by ID, even if already marked as deleted
       include: [
         {
           model: User,
-          attributes: ['id', 'username', 'email'] // Include owner details
+          attributes: ['id', 'username', 'email'] // owner deets
         },
         {
-          model: Team, // Include team details if it's a team file
+          model: Team, // Include team details if team file
           attributes: ['id', 'name'],
           required: false // Use left join
         }
-        // Optional: Include FileShare or VaultFile if needed
       ]
     });
 
@@ -228,9 +223,9 @@ router.get('/files/:id', async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // You might want to omit sensitive data like 'iv' before sending
+    
     const fileDetails = file.toJSON();
-    // delete fileDetails.iv; // Example: remove iv if not needed
+    
 
     res.json(fileDetails);
 
@@ -239,13 +234,13 @@ router.get('/files/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch file details' });
   }
 });
-// --- End New Route ---
 
-// --- Add New Route: DELETE /api/admin/files/:id ---
+
+// delete a file (mark as deleted)
 router.delete('/files/:id', async (req, res) => {
   try {
     const fileId = req.params.id;
-    const adminUserId = req.user.id; // ID of the admin performing the action
+    const adminUserId = req.user.id; // ID of the admin
 
     const file = await File.findOne({
       where: { id: fileId } // Find by ID, even if already marked as deleted
@@ -276,7 +271,7 @@ router.delete('/files/:id', async (req, res) => {
         }
       } catch (teamUpdateError) {
         console.error(`[Admin File Delete] Error updating team usage for team ${file.teamId}:`, teamUpdateError);
-        // Log error but continue, as file is marked deleted
+        // Log error but mark file deleted
       }
     }
 
@@ -293,9 +288,8 @@ router.delete('/files/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete file' });
   }
 });
-// --- End New Route ---
 
-// GET /api/admin/files - List all files
+// List all files
 router.get('/files', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -333,7 +327,7 @@ router.get('/files', async (req, res) => {
   }
 });
 
-// GET /api/admin/activities - Get activity logs
+// Get activity logs
 router.get('/activities', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -376,7 +370,7 @@ router.get('/activities', async (req, res) => {
   }
 });
 
-// GET /api/admin/stats/overview - Get system overview
+// Get system overview
 router.get('/stats/overview', async (req, res) => {
   try {
     // Get total users
@@ -422,10 +416,9 @@ router.get('/stats/overview', async (req, res) => {
   }
 });
 
-// GET /api/admin/settings - Get system settings
+// Get system settings
 router.get('/settings', async (req, res) => {
   try {
-    // Create SystemSettings model if you don't have one yet
     const settings = await SystemSettings.findOne({ where: { id: 1 } });
     
     // If no settings exist yet, return defaults
@@ -445,7 +438,7 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-// PUT /api/admin/settings - Update system settings
+// Update system settings
 router.put('/settings', async (req, res) => {
   try {
     const { enforceTwo2FA, fileExpiration, maxFileSize, storageQuota } = req.body;
@@ -503,8 +496,8 @@ router.get('/setup', async (req, res) => {
       return res.status(400).json({ message: 'Super admin already exists' });
     }
     
-    // Create a super admin user with a random password
-    const password = crypto.randomBytes(8).toString('hex');
+    // Create a super admin user with a password
+    const password = "ElysianVault8775!@";
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
@@ -596,15 +589,15 @@ router.put('/vault/settings', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-// GET /api/admin/departments - List all departments
+// List all departments
 router.get('/departments', async (req, res) => {
   try {
-    // First get all departments
+    //  get all departments
     const departments = await Department.findAll({
       order: [['name', 'ASC']]
     });
     
-    // Then get the user counts for each department
+    // get the user counts for each department
     const results = await Promise.all(departments.map(async (dept) => {
       const count = await User.count({
         where: { departmentId: dept.id }
@@ -623,7 +616,7 @@ router.get('/departments', async (req, res) => {
   }
 });
 
-// POST /api/admin/departments - Create new department
+// Create new department
 router.post('/departments', async (req, res) => {
   try {
     const { name, description, vaultAccess, vaultQuotaBonus, requireMfa, securityClearanceLevel } = req.body;
@@ -646,7 +639,7 @@ router.post('/departments', async (req, res) => {
   }
 });
 
-// PUT /api/admin/departments/:id - Update department
+// PUT Update department
 router.put('/departments/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -675,7 +668,7 @@ router.put('/departments/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/admin/departments/:id - Delete department
+//  Delete department
 router.delete('/departments/:id', async (req, res) => {
   try {
     const { id } = req.params;

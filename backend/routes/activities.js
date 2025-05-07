@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const verifyToken = require('./verifyToken');
-const Activity_Log = require('../models/Activity_Log'); // Changed from File
+const Activity_Log = require('../models/Activity_Log');
 const File = require('../models/File');
 
 router.get('/', verifyToken, async (req, res) => {
@@ -13,7 +13,7 @@ router.get('/', verifyToken, async (req, res) => {
 
         if (action && action !== 'all') where.action = action;
         
-        // Use Activity_Log model instead of File model
+        
         const logs = await Activity_Log.findAndCountAll({
             where, 
             limit, 

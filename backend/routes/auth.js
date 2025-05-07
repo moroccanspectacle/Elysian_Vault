@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const User = require('../models/User');
-const Activity_Log = require('../models/Activity_Log'); // <-- Add this line
+const Activity_Log = require('../models/Activity_Log');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const speakeasy = require('speakeasy');
@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const { Op } = require('sequelize');
 const SystemSettings = require('../models/SystemSettings');
-const { logActivity } = require('../services/logger'); // <-- Add this line
+const { logActivity } = require('../services/logger'); 
 
 router.post('/register', async (req, res) => {
 
@@ -23,7 +23,7 @@ router.post('/register', async (req, res) => {
     if(emailExist) return res.status(400).send('Email already exists');
 
     //Hash password
-    const salt = await bcrypt.genSalt(10); //genSalt(10) increases the complexity of the hash generated
+    const salt = await bcrypt.genSalt(10); // increases the complexity of the hash generated
     const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
     try {
@@ -74,7 +74,7 @@ router.post('/login', async (req, res) => {
         // Check if 2FA is enforced by system settings
         const systemSettings = await SystemSettings.findOne({ where: { id: 1 } });
 
-        // --- CORRECTED ENFORCEMENT BLOCK ---
+        
         if (systemSettings && systemSettings.enforceTwo2FA && user.role !== 'super_admin') {
             // Force MFA setup for users if they don't have it enabled yet
 
@@ -91,13 +91,13 @@ router.post('/login', async (req, res) => {
                 mfaRequired: true,
                 userId: user.id,
                 setupRequired: true, // Special flag to indicate they need to set up 2FA
-                setupToken: setupToken // Include the token
+                setupToken: setupToken
             });
         }
-        // --- END CORRECTED ENFORCEMENT BLOCK ---
+        
     }
 
-    // If no MFA required (neither enabled nor enforced), proceed with normal login
+    // If no MFA required proceed with normal login
     const rememberMe = req.body.rememberMe === true;
     const expiresIn = rememberMe ? '30d' : '1d';
 
@@ -135,7 +135,7 @@ router.post('/login/verify-mfa', async (req, res) => {
         // Set token expiration based on remember me option
         const expiresIn = rememberMe ? '30d' : '1d';
         
-        // If MFA is verified, issue the JWT token with appropriate expiration
+        // If MFA is verified, give the JWT token with appropriate expiration
         const jwtToken = jwt.sign(
           {id: user.id},
           process.env.TOKEN_SECRET,
@@ -196,13 +196,14 @@ router.post('/verify-2fa', verifyToken, async (req, res) => {
     }
 });
 
+//logout
 router.post('/logout', async (req, res) =>
 {
     res.header('auth-token', '').send('Logged out');
     console.log('User logged out successfully');
 });
 
-// Modify the verify endpoint to include MFA setup status
+
 router.get('/verify', verifyToken, async (req, res) => {
     try {
         // Find user by ID from the verified token
@@ -249,7 +250,7 @@ router.post('/forgot-password', async (req, res) => {
         // Find user with this email
         const user = await User.findOne({ where: { email } });
         if (!user) {
-            // For security reasons, don't reveal if the email exists or not
+            // don't reveal if the email exists or not
             return res.status(200).json({ message: 'If your email exists in our system, you will receive a password reset link' });
         }
         
