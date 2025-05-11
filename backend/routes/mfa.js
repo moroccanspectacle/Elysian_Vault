@@ -4,8 +4,8 @@ const User = require('../models/User');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
-const SystemSettings = require('../models/SystemSettings'); // Ensure SystemSettings is imported
-const Department = require('../models/Department'); // Ensure Department is imported
+const SystemSettings = require('../models/SystemSettings');
+const Department = require('../models/Department');
 
 // Enhanced middleware
 const verifyMfaSetupToken = (req, res, next) => {
@@ -30,7 +30,7 @@ const verifyMfaSetupToken = (req, res, next) => {
         }
     }
     
-    // Check even more header variations
+    // Check even more header variations (debuuggin)
     const setupToken = req.header('mfa-setup-token') || 
                        req.header('mfasetuptoken') || 
                        req.header('x-mfa-setup-token') ||
@@ -63,7 +63,7 @@ const verifyMfaSetupToken = (req, res, next) => {
     }
 };
 
-// Use this middleware instead of verifyToken for MFA setup routes
+// Using this middleware instead of verifyToken
 router.post('/setup', verifyMfaSetupToken, async(req, res) => {
     console.log('Setup request received with user:', req.user); 
     try {
@@ -166,9 +166,9 @@ router.post('/disable', verifyToken, async(req, res) => {
         // Check if 2FA is enforced for this user
         const systemSettings = await SystemSettings.findOne({ where: { id: 1 } });
         const systemEnforced = systemSettings?.enforceTwo2FA && user.role !== 'super_admin';
-        const departmentEnforced = user.Department?.requireMfa; // Check department enforcement
+        const departmentEnforced = user.Department?.requireMfa;
 
-        console.log(`[MFA Disable] Enforcement Check - System: ${systemEnforced}, Department: ${departmentEnforced}`); // Log enforcement status
+        console.log(`[MFA Disable] Enforcement Check - System: ${systemEnforced}, Department: ${departmentEnforced}`);
 
         if (systemEnforced || departmentEnforced) {
             console.log('[MFA Disable] Error: MFA is enforced.');
@@ -179,41 +179,41 @@ router.post('/disable', verifyToken, async(req, res) => {
             secret: user.mfaSecret,
             encoding: 'base32',
             token: token,
-            window: 1 // Allow some time drift
+            window: 1 // Allow time drift
         });
 
-        console.log(`[MFA Disable] Token Verification Result: ${verified}`); // Log verification result
+        console.log(`[MFA Disable] Token Verification Result: ${verified}`);
 
         if (!verified) {
             console.log('[MFA Disable] Error: Invalid token provided.');
             return res.status(400).json({error: 'Invalid token'});
         }
 
-        console.log('[MFA Disable] Verification successful. Attempting DB update...'); // Log before update
-        const [updateCount] = await User.update({ // Capture update count
+        console.log('[MFA Disable] Verification successful. Attempting DB update');
+        const [updateCount] = await User.update({
             mfaEnabled: false,
             mfaSecret: null
         }, {
             where: {id: req.user.id}
         });
 
-        console.log(`[MFA Disable] DB Update Result - Rows affected: ${updateCount}`); // Log update result
+        console.log(`[MFA Disable] DB Update Result - Rows affected: ${updateCount}`);
 
         if (updateCount > 0) {
             res.json({message: 'MFA disabled Successfully'});
         } else {
-            // This case might happen if the user ID somehow didn't match, though unlikely here
+            // This case might happen if the user ID didn't match
             console.log('[MFA Disable] Error: Database update affected 0 rows.');
             res.status(500).json({error: 'Failed to update MFA status in database'});
         }
 
     } catch (error) {
-        console.error('[MFA Disable] Error:', error); // Log any caught errors
+        console.error('[MFA Disable] Error:', error);
         res.status(500).json({error: 'Failed to disable MFA'});
     }
 });
 
-// Add this route for emergency use
+// debug route
 router.post('/debug-setup', async(req, res) => {
     try {
         console.log('Debug setup route called');
@@ -222,7 +222,7 @@ router.post('/debug-setup', async(req, res) => {
         
         let userId = null;
         
-        // Try to extract user ID from various sources
+        // Check for userId in headers
         if (req.body && req.body.userId) {
             userId = req.body.userId;
         } else if (req.body && req.body.setupToken) {

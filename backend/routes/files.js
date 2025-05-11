@@ -416,8 +416,6 @@ router.get('/list', verifyToken, async (req, res) => {
     }
 });
 
-// Modify the delete route to check team permissions
-
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const fileId = req.params.id;
@@ -434,7 +432,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
         
         // Check if this is a team file
         if (file.teamId) {
-            // Check if user is a member of this team
+            // Check if user member of this team
             const membership = await TeamMember.findOne({
                 where: {
                     teamId: file.teamId,
@@ -468,30 +466,26 @@ router.delete('/:id', verifyToken, async (req, res) => {
         // Proceed with deletion
         await file.update({ isDeleted: true });
 
-        // --- Add this block to update team usage ---
+        // block to update team usage
         if (file.teamId) {
             try {
                 const team = await Team.findByPk(file.teamId);
                 if (team) {
-                    // Use Number() to ensure values are numeric before decrementing
+                    // Number to ensure values are numeric before decrementing
                     const fileSize = Number(file.fileSize);
                     if (!isNaN(fileSize)) {
-                        // Use decrement for safety against race conditions
                         await team.decrement('currentUsage', { by: fileSize });
                         console.log(`[File Delete] Decremented team ${file.teamId} usage by ${fileSize}.`);
                     } else {
                         console.error(`[File Delete] Invalid file size (${file.fileSize}) for file ${fileId}. Team usage not updated.`);
                     }
                 } else {
-                    // This case should ideally not happen if the file record is valid
                     console.error(`[File Delete] Team ${file.teamId} not found when trying to update usage for deleted file ${fileId}.`);
                 }
             } catch (teamUpdateError) {
-                // Log the error but don't necessarily fail the whole delete operation
                 console.error(`[File Delete] Error updating team usage for team ${file.teamId}:`, teamUpdateError);
             }
         }
-        // --- End block ---
 
         // Log the activity
         await logActivity('delete', req.user.id, fileId, file.teamId ? { teamId: file.teamId } : null);

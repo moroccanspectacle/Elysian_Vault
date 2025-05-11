@@ -11,7 +11,7 @@ const {decryptFile} = require('../config/encryption');
 const { permission } = require('process');
 const { create } = require('domain');
 
-// List user's shares - MOVED TO TOP
+// List user's shares
 router.get('/myshares', verifyToken, async(req, res) => {
   try {
     const userId = req.user.id;
@@ -49,7 +49,7 @@ router.get('/myshares', verifyToken, async(req, res) => {
   }
 });
 
-// Debug route - should also be early
+// Debug route
 router.get('/debug/:token', verifyToken, async (req, res) => {
   try {
     const share = await FileShare.findOne({
@@ -70,7 +70,7 @@ router.get('/debug/:token', verifyToken, async (req, res) => {
   }
 });
 
-// File shares route - should be before param routes
+// File shares route
 router.get('/file/:fileId', verifyToken, async (req, res) => {
   try {
     // Check if user owns the file
@@ -109,7 +109,7 @@ router.get('/file/:fileId', verifyToken, async (req, res) => {
   }
 });
 
-// Fix the route to /share instead of /create
+// Create a new share
 router.post('/share', verifyToken, async (req, res) => {
   try {
     const { fileId, permissions, expirationDays, recipientEmail } = req.body;
@@ -135,15 +135,15 @@ router.post('/share', verifyToken, async (req, res) => {
       ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000)
       : null;
 
-    // Create share record with explicit fileId
+    // Create share record with the fileId
     const shareRecord = await FileShare.create({
       shareToken,
-      fileId: fileId,  // EXPLICITLY set the fileId
+      fileId: fileId,
       expiresAt: expiresAt,
       permissions: permissions || { canView: true, canDownload: false },
       recipientEmail: recipientEmail || null,
       isActive: true,
-      createdById: req.user.id  // Make sure to set the creator
+      createdById: req.user.id
     });
 
     // Log activity
@@ -161,6 +161,7 @@ router.post('/share', verifyToken, async (req, res) => {
   }
 });
 
+// Get share details
 router.get('/details/:shareId', verifyToken,  async (req, res) => {
     try {
         const share = await FileShare.findOne({
@@ -183,6 +184,7 @@ router.get('/details/:shareId', verifyToken,  async (req, res) => {
     }
 });
 
+// Update share details
 router.put('/:shareId', verifyToken, async (req, res) => {
     try {
         const {permissions, expirationDays, isActive} = req.body;
@@ -223,6 +225,7 @@ router.put('/:shareId', verifyToken, async (req, res) => {
     }
 });
 
+// Delete a share
 router.delete('/:shareId', verifyToken, async (req, res) => {
     try {
         const share = await FileShare.findOne({
@@ -246,6 +249,7 @@ router.delete('/:shareId', verifyToken, async (req, res) => {
     }
 });
 
+// Access a share
 router.get('/:shareToken', async (req, res)=> {
     try {
         const share = await FileShare.findOne({
@@ -285,6 +289,7 @@ router.get('/:shareToken', async (req, res)=> {
     }
 });
 
+// Download a shared file
 router.get('/:shareToken/download', async (req, res) => {
     try {
         const share = await FileShare.findOne({
@@ -342,6 +347,7 @@ router.get('/:shareToken/download', async (req, res) => {
     }
 });
 
+// Update share status (active/inactive)
 router.put('/:shareId/status', verifyToken, async (req, res) => {
   try {
     const {shareId} = req.params;

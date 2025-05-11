@@ -7,7 +7,7 @@ const logActivity = async (action, userId, fileId = null, details = null, req = 
         const log = await Activity_Log.create({
             action,
             userId,
-            fileId, // Changed from FileId to fileId
+            fileId,
             details,
             ipAddress
         });

@@ -7,10 +7,10 @@ const User = require('../models/User');
 const File = require('../models/File');
 const TeamSettings = require('../models/TeamSettings');
 const {logActivity} = require('../services/logger');
-const { Op } = require('sequelize' ); // Ensure Op is imported
+const { Op } = require('sequelize' );
 const nodemailer = require('nodemailer');
 
-// GET /api/teams - List teams for current user
+// GET /api/teams
 router.get('/', verifyToken, async (req, res) => {
     try {
         console.log('Getting teams for user ID:', req.user.id);
@@ -75,7 +75,7 @@ router.get('/', verifyToken, async (req, res) => {
                 role: membership.role,
                 status: membership.status // Include status to show if invited or active
             };
-        }).filter(Boolean); // Remove null entries
+        }).filter(Boolean);
         
         res.json(teams);
     } catch (error) {
@@ -84,7 +84,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/teams - Create a new team
+// POST /api/teams
 router.post('/', verifyToken, async (req, res) => {
     try {
         const {name, description, storageQuota} = req.body;
@@ -116,7 +116,7 @@ router.post('/', verifyToken, async (req, res) => {
         
         await logActivity('create_team', req.user.id, null, {teamId: team.id});
         
-        // Return ALL fields needed by the frontend
+        // Return fields needed by the frontend
         res.status(201).json({
             id: team.id,
             name: team.name,
@@ -124,7 +124,7 @@ router.post('/', verifyToken, async (req, res) => {
             ownerId: team.ownerId,
             currentUsage: team.currentUsage || 0,
             storageQuota: team.storageQuota,
-            role: 'owner' // Add role field explicitly
+            role: 'owner'
         });
     } catch (error) {
         console.error('Team creation error:', error);
@@ -132,7 +132,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-// GET /api/teams/:id - Get single team details
+// GET /api/teams/:id 
 router.get('/:id', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -164,7 +164,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// GET /api/teams/:id/members - Get team members
+// GET /api/teams/:id/members
 router.get('/:id/members', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -191,7 +191,6 @@ router.get('/:id/members', verifyToken, async (req, res) => {
             }]
         });
         
-        // Format the response
         const formattedMembers = members.map(member => ({
             id: member.id,
             userId: member.userId,
@@ -210,7 +209,7 @@ router.get('/:id/members', verifyToken, async (req, res) => {
     }
 });
 
-// GET /api/teams/:id/files - Get team files
+// GET /api/teams/:id/files
 router.get('/:id/files', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -220,7 +219,7 @@ router.get('/:id/files', verifyToken, async (req, res) => {
             where: {
                 teamId: teamId,
                 userId: req.user.id,
-                // Include all statuses, not just 'active'
+                // Include all statuses
                 status: {[Op.in]: ['active', 'invited']}
             }
         });
@@ -229,7 +228,7 @@ router.get('/:id/files', verifyToken, async (req, res) => {
             return res.status(403).json({error: 'You do not have access to this team'});
         }
         
-        // If the user is invited but not yet active, return an empty array
+        // If the user is invited but not yet activ return empty array
         if (membership.status === 'invited') {
             return res.json([]);
         }
@@ -263,14 +262,13 @@ router.get('/:id/files', verifyToken, async (req, res) => {
     }
 });
 
-// --- Add New Route: GET /api/teams/:id/search-invitees ---
-// Returns users who are NOT already members or invited to this specific team
+// GET /api/teams/:id/search-invitees
 router.get('/:id/search-invitees', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
         const searchTerm = req.query.search || ''; // Optional search term
 
-        // 1. Verify the current user is an active member of the team
+        //Verify the current user is an active member of the team
         const currentUserMembership = await TeamMember.findOne({
             where: { teamId: teamId, userId: req.user.id, status: 'active' }
         });
@@ -278,16 +276,15 @@ router.get('/:id/search-invitees', verifyToken, async (req, res) => {
             return res.status(403).json({ error: 'You are not an active member of this team.' });
         }
 
-        // 2. Get IDs of users already in or invited to the team
+        //Get IDs of users already in or invited to the team
         const existingMemberIds = (await TeamMember.findAll({
             where: { teamId: teamId },
             attributes: ['userId'] // Only fetch userId
         })).map(member => member.userId).filter(id => id !== null); // Filter out null userId for pending email invites
 
-        // 3. Find users matching the search term (if any) who are NOT in the existingMemberIds list
+        // Find users matching the search term (if any) who are NOT in the existingMemberIds list
         const whereClause = {
             id: { [Op.notIn]: existingMemberIds }, // Exclude existing/invited members
-            // status: 'active' // Optional: Only allow inviting active users? Adjust as needed.
         };
 
         if (searchTerm) {
@@ -310,24 +307,22 @@ router.get('/:id/search-invitees', verifyToken, async (req, res) => {
         res.status(500).json({ error: 'Failed to search for users to invite.' });
     }
 });
-// --- End New Route ---
 
 
-// POST /api/teams/:id/invite - Invite a member to the team
-// --- Modify this route ---
+// POST /api/teams/:id/invite
 router.post('/:id/invite', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
-        // Expect userId and role now, instead of email
+        // Expect userId and role
         const { userId, role } = req.body;
         const inviterId = req.user.id;
 
-        // Validate input: Check for userId and role
+        // Validate input
         if (!userId || !role) {
             return res.status(400).json({ error: 'User ID and role are required' });
         }
 
-        // Verify that the current user has permission to invite members (existing logic)
+        // Verify that the current user has permission to invite members
         const membership = await TeamMember.findOne({
             where: {
                 teamId: teamId,
@@ -352,7 +347,7 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
             }
         }
 
-        // Find the user being invited by ID
+        // Find the user invited by ID
         const userToInvite = await User.findOne({
             where: { id: userId }
         });
@@ -363,11 +358,11 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
         }
         const invitedUserEmail = userToInvite.email; // Get email for notification
 
-        // Check if user is already a member of the team (using userId)
+        // Check if user is already a member of the team
         const existingMember = await TeamMember.findOne({
             where: {
                 teamId: teamId,
-                userId: userId // Check by userId now
+                userId: userId
             }
         });
 
@@ -375,22 +370,20 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
             if (existingMember.status === 'active') {
                 return res.status(400).json({ error: 'User is already an active member of this team' });
             } else if (existingMember.status === 'invited') {
-                // Optional: Resend invite? Or just return error?
                 return res.status(400).json({ error: 'User has already been invited to this team' });
             }
-            // Handle other statuses if necessary (e.g., suspended)
         }
 
         // Create the invitation record using userId
         const newMember = await TeamMember.create({
             teamId: teamId,
-            userId: userId, // Use the provided userId
+            userId: userId,
             role: role,
             status: 'invited',
-            email: invitedUserEmail // Store email still, useful for reference/notifications
+            email: invitedUserEmail
         });
 
-        // --- Send Invitation Email (using invitedUserEmail) ---
+        // Send Invitation Email
         try {
             const inviter = await User.findByPk(inviterId, { attributes: ['username'] });
             const team = await Team.findByPk(teamId, { attributes: ['name'] });
@@ -427,16 +420,16 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
         } catch (emailError) {
             console.error(`Failed to send invitation email to ${invitedUserEmail}:`, emailError);
         }
-        // --- End Send Invitation Email ---
+        
 
         // Log the invite activity
         await logActivity('invite_team_member', inviterId, null, {
             teamId: teamId,
-            invitedUserId: userId, // Log userId instead of email
+            invitedUserId: userId,
             role: role
         });
 
-        // Return member data - use userToInvite directly
+        // Return member data
         res.status(201).json({
             id: newMember.id,
             userId: userToInvite.id,
@@ -444,7 +437,7 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
             status: newMember.status,
             joinedAt: newMember.createdAt,
             username: userToInvite.username,
-            email: userToInvite.email, // Return email from the invited user object
+            email: userToInvite.email,
             profileImage: userToInvite.profileImage
         });
 
@@ -455,18 +448,18 @@ router.post('/:id/invite', verifyToken, async (req, res) => {
         }
     }
 });
-// --- End Modify Route ---
 
-// --- Add New Route: DELETE /api/teams/:id/members/:memberId ---
-router.delete('/:id/members/:memberId', verifyToken, /* Optional: require2FA, */ async (req, res) => {
+
+// Add New Route: DELETE /api/teams/:id/members/:memberId
+router.delete('/:id/members/:memberId', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
-        const memberIdToRemove = req.params.memberId; // This is the TeamMember record ID
-        const removerUserId = req.user.id; // User performing the action
+        const memberIdToRemove = req.params.memberId; // This is the TeamMembeID
+        const removerUserId = req.user.id;
 
         console.log(`[Team Member Delete] Attempting removal: Team ${teamId}, Member Record ${memberIdToRemove}, By User ${removerUserId}`);
 
-        // Verify remover's permissions (owner or admin)
+        // Verify remover's permissions
         const removerMembership = await TeamMember.findOne({
             where: { teamId: teamId, userId: removerUserId, status: 'active' }
         });
@@ -492,14 +485,13 @@ router.delete('/:id/members/:memberId', verifyToken, /* Optional: require2FA, */
             return res.status(400).json({ error: 'Cannot remove the team owner' });
         }
 
-        // Perform the deletion
         await membershipToRemove.destroy();
 
         // Log the activity
         await logActivity('remove_team_member', removerUserId, null, {
             teamId: teamId,
-            removedUserId: membershipToRemove.userId, // Log the actual User ID removed
-            removedMemberRecordId: memberIdToRemove // Log the TeamMember record ID
+            removedUserId: membershipToRemove.userId,
+            removedMemberRecordId: memberIdToRemove
         });
 
         console.log(`[Team Member Delete] Success: Member Record ${memberIdToRemove} removed from Team ${teamId}.`);
@@ -510,15 +502,14 @@ router.delete('/:id/members/:memberId', verifyToken, /* Optional: require2FA, */
         res.status(500).json({ error: 'Failed to remove team member' });
     }
 });
-// --- End New Route ---
 
-// --- Add New Route: PUT /api/teams/:id/members/:memberId/role ---
-router.put('/:id/members/:memberId/role', verifyToken, /* Optional: require2FA, */ async (req, res) => {
+// Add New Route: PUT /api/teams/:id/members/:memberId/role
+router.put('/:id/members/:memberId/role', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
-        const memberIdToUpdate = req.params.memberId; // This is the TeamMember record ID
-        const { role: newRole } = req.body; // Get the new role from the request body
-        const updaterUserId = req.user.id; // User performing the action
+        const memberIdToUpdate = req.params.memberId;
+        const { role: newRole } = req.body; 
+        const updaterUserId = req.user.id;
 
         console.log(`[Team Member Role Update] Attempting update: Team ${teamId}, Member Record ${memberIdToUpdate}, New Role ${newRole}, By User ${updaterUserId}`);
 
@@ -527,8 +518,7 @@ router.put('/:id/members/:memberId/role', verifyToken, /* Optional: require2FA, 
             return res.status(400).json({ error: 'Invalid role specified. Must be "admin" or "member".' });
         }
 
-        // Verify updater's permissions (Only Owner can change roles for this example)
-        // You might adjust this logic based on your requirements (e.g., allow admins to change roles too)
+        // Verify updater permissions
         const team = await Team.findByPk(teamId);
         if (!team) {
             return res.status(404).json({ error: 'Team not found' });
@@ -554,7 +544,7 @@ router.put('/:id/members/:memberId/role', verifyToken, /* Optional: require2FA, 
             return res.status(400).json({ error: "Cannot change the team owner's role." });
         }
 
-        // Prevent changing role to 'owner'
+        // Prevent changing role to owner
         if (newRole === 'owner') {
              return res.status(400).json({ error: "Cannot assign 'owner' role. Ownership transfer needs a dedicated process." });
         }
@@ -573,7 +563,7 @@ router.put('/:id/members/:memberId/role', verifyToken, /* Optional: require2FA, 
         });
 
         console.log(`[Team Member Role Update] Success: Member Record ${memberIdToUpdate} role changed to ${newRole} in Team ${teamId}.`);
-        // Return the updated member info or just success
+        // Return the updated member info and success
         res.json({ message: 'Member role updated successfully', updatedRole: newRole });
 
     } catch (error) {
@@ -581,9 +571,8 @@ router.put('/:id/members/:memberId/role', verifyToken, /* Optional: require2FA, 
         res.status(500).json({ error: 'Failed to update team member role' });
     }
 });
-// --- End New Route ---
 
-// GET /api/teams/:id/settings - Get team settings
+// GET /api/teams/:id/settings
 router.get('/:id/settings', verifyToken, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -601,12 +590,12 @@ router.get('/:id/settings', verifyToken, async (req, res) => {
             return res.status(403).json({error: 'You do not have access to this team'});
         }
         
-        // Get team settings - adjust model as needed
+        // Get team settings
         const teamSettings = await TeamSettings.findOne({
             where: { teamId: teamId }
         });
         
-        // If no settings exist yet, return defaults
+        // If no settings exist yet return defaults
         if (!teamSettings) {
             return res.json({
                 memberPermissions: {
@@ -628,7 +617,7 @@ router.get('/:id/settings', verifyToken, async (req, res) => {
     }
 });
 
-// PUT /api/teams/:id/settings - Update team settings
+// PUT /api/teams/:id/settings
 router.put('/:id/settings', verifyToken, require2FA, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -679,7 +668,7 @@ router.put('/:id/settings', verifyToken, require2FA, async (req, res) => {
     }
 });
 
-// DELETE /api/teams/:id - Delete a team
+// DELETE /api/teams/:id
 router.delete('/:id', verifyToken, require2FA, async (req, res) => {
     try {
         const teamId = req.params.id;
@@ -703,7 +692,7 @@ router.delete('/:id', verifyToken, require2FA, async (req, res) => {
             }
         });
         
-        // Mark all files as deleted or physically delete them
+        // Mark all files as deleted
         for (const file of teamFiles) {
             await file.update({ isDeleted: true });
             
@@ -719,12 +708,12 @@ router.delete('/:id', verifyToken, require2FA, async (req, res) => {
             where: { teamId: teamId }
         });
         
-        // Delete team settings if they exist
+        // Delete team settings
         await TeamSettings.destroy({
             where: { teamId: teamId }
         });
         
-        // Finally delete the team
+        // delete the team
         await team.destroy();
         
         // Log the team deletion

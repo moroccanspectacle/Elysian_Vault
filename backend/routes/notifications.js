@@ -4,7 +4,7 @@ const TeamMember = require('../models/TeamMember');
 const Team = require('../models/Team');
 const {Op} = require('sequelize');
 
-// GET /api/notifications/invitations - Get team invitations for current user
+// GET /api/notifications/invitations
 router.get('/invitations', verifyToken, async (req, res) => {
     try {
         
@@ -53,7 +53,7 @@ router.get('/invitations', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/notifications/invitations/:id/accept - Accept a team invitation
+// POST /api/notifications/invitations/:id/accept
 router.post('/invitations/:id/accept', verifyToken, async (req, res) => {
     try {
         const invitationId = req.params.id;
@@ -87,7 +87,7 @@ router.post('/invitations/:id/accept', verifyToken, async (req, res) => {
         // Update the invitation status to active
         await invitation.update({
             status: 'active',
-            userId: req.user.id // Ensure user ID is set (for email invites)
+            userId: req.user.id
         });
         
         res.json({message: 'Invitation accepted successfully'});
@@ -97,7 +97,7 @@ router.post('/invitations/:id/accept', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/notifications/invitations/:id/decline - Decline a team invitation
+// POST /api/notifications/invitations/:id/decline
 router.post('/invitations/:id/decline', verifyToken, async (req, res) => {
     try {
         const invitationId = req.params.id;

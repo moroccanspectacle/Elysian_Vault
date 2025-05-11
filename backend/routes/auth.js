@@ -109,7 +109,7 @@ router.post('/login', async (req, res) => {
     res.header('auth-token', token).send(token);
 });
 
-// Update the MFA verification route
+// the MFA verification route
 router.post('/login/verify-mfa', async (req, res) => {
     try {
         const { userId, token, rememberMe } = req.body;

@@ -26,7 +26,6 @@ const cleanupExpiredFiles = async () => {
         // Mark as deleted in database
         await file.update({ isDeleted: true });
         
-        // Optional: Actually delete the file from storage
         const filePath = path.join(__dirname, '../uploads', file.storedFilename);
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);

@@ -8,23 +8,23 @@ const File = require('../models/File');
 const VaultFile = require('../models/vaultFile');
 const User = require('../models/User');
 const SystemSettings = require('../models/SystemSettings');
-const Department = require('../models/Department'); // <-- Add this line
+const Department = require('../models/Department');
 const {generateFileHash} = require('../config/fileIntegrity');
-const bcrypt = require('bcryptjs'); // Make sure bcrypt is imported
+const bcrypt = require('bcryptjs');
 
 
-// Modify POST /add route
-router.post('/add/:fileId', verifyToken, /* Removed require2FA */ async (req, res) => {
+// POST /add route
+router.post('/add/:fileId', verifyToken,async (req, res) => {
     try {
         const fileId = req.params.fileId;
         const userId = req.user.id;
-        const { pin } = req.body; // Expect PIN in the request body
+        const { pin } = req.body;
 
-        // --- PIN Validation ---
+        
         if (!pin || !/^\d{6}$/.test(pin)) {
             return res.status(400).json({ message: 'A 6-digit PIN is required' });
         }
-        // --- End PIN Validation ---
+        
 
         const file = await File.findOne({
             where: {
@@ -55,7 +55,7 @@ router.post('/add/:fileId', verifyToken, /* Removed require2FA */ async (req, re
             });
         }
 
-        // Vault key generation (remains the same)
+        // Vault key generation
         const additionalKey = crypto.randomBytes(16).toString('hex');
         const encryptedKey = crypto.createHmac('sha256', process.env.TOKEN_SECRET + userId)
             .update(additionalKey)
@@ -64,12 +64,11 @@ router.post('/add/:fileId', verifyToken, /* Removed require2FA */ async (req, re
         const vaultFile = await VaultFile.create({
             fileId: fileId,
             userId: userId,
-            vaultKey: encryptedKey, // Keep vaultKey for potential future encryption use
-            accessPin: pin, // Pass the raw PIN, hook will hash it
+            vaultKey: encryptedKey,
+            accessPin: pin,
             lastAccessed: null,
             selfDestruct: req.body.selfDestruct || false,
             destructAfter: req.body.destructAfter || null,
-            // requireMfa: true // Removed
         });
         
         // Update user's vault usage
@@ -80,7 +79,7 @@ router.post('/add/:fileId', verifyToken, /* Removed require2FA */ async (req, re
 
         await logActivity('vault_add', userId, fileId, 'Added file to vault', req);
         
-        // Return updated quota information
+        // Return quota information
         const updatedPermissions = await checkVaultPermissions(userId);
         
         res.status(201).json({
@@ -99,7 +98,7 @@ router.post('/add/:fileId', verifyToken, /* Removed require2FA */ async (req, re
 router.get('/list', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
-        console.log(`[Vault List] Fetching vault files for user: ${userId}`); // Log user ID
+        console.log(`[Vault List] Fetching vault files for user: ${userId}`);
 
         const vaultFiles = await VaultFile.findAll({
             where: {userId: userId},
@@ -111,64 +110,57 @@ router.get('/list', verifyToken, async (req, res) => {
             }]
         });
 
-        console.log(`[Vault List] Found ${vaultFiles.length} raw vault file records.`); // Log raw count
-        // Optional: Log the raw data if needed for deep debugging
-        // console.log('[Vault List] Raw data:', JSON.stringify(vaultFiles, null, 2)); 
+        console.log(`[Vault List] Found ${vaultFiles.length} raw vault file records.`);
 
         const mappedFiles = vaultFiles.map(vf => ({
-            id: vf.id, // Use VaultFile's own ID for the list key
+            id: vf.id,
             fileId: vf.fileId,
             fileName: vf.File.originalName, 
             fileSize: vf.File.fileSize,
             fileType: vf.File.fileType,
             uploadDate: vf.File.uploadDate,
             lastAccessed: vf.lastAccessed,
-            requiresMfa: vf.requireMfa, // Corrected field name
+            requiresMfa: vf.requireMfa,
             selfDestruct: vf.selfDestruct,
             destructAfter: vf.destructAfter
         }));
 
         console.log(`[Vault List] Mapped ${mappedFiles.length} files to send.`); // Log mapped count
-        // Optional: Log the mapped data
-        // console.log('[Vault List] Mapped data:', JSON.stringify(mappedFiles, null, 2));
 
         res.json(mappedFiles); // Send the mapped data
 
     } catch (error) {
-        console.error('[Vault List] Error listing vault files:', error); // Add context to error log
+        console.error('[Vault List] Error listing vault files:', error);
         res.status(500).json({message: 'Failed to list vault files'});
     }
 });
 
-// Modify GET /access route
+// GET /access route
 router.get('/access/:id', verifyToken, async (req, res) => {
     try {
         const vaultFileId = req.params.id;
         const userId = req.user.id;
         // Try reading lowercase header name first
-        let providedPin = req.headers['x-vault-pin']; // <-- Use lowercase 'x'
+        let providedPin = req.headers['x-vault-pin'];
 
-        // --- Update Logging ---
         console.log(`[Vault Access] Checking for PIN header 'x-vault-pin' (lowercase). Found: ${providedPin ? 'Yes' : 'No'}`);
 
-        // If lowercase didn't work, try uppercase again (just in case)
+        // try uppercase again
         if (!providedPin) {
             providedPin = req.headers['X-Vault-PIN'];
             console.log(`[Vault Access] Checking for PIN header 'X-Vault-PIN' (uppercase). Found: ${providedPin ? 'Yes' : 'No'}`);
         }
 
-        // If still not found after checking both cases, log all headers
+        // log all headers
         if (!providedPin) {
             console.log('[Vault Access] All headers received by route handler:', JSON.stringify(req.headers, null, 2));
         }
-        // --- End Logging ---
 
-        // --- PIN Check ---
+        
         if (!providedPin) {
             console.error('[Vault Access] Error: Vault PIN header was missing.'); // Log the specific failure
             return res.status(401).json({ message: 'Vault PIN required', needsPin: true });
         }
-        // --- End PIN Check ---
 
         const vaultFile = await VaultFile.findOne({
             where: {
@@ -184,7 +176,7 @@ router.get('/access/:id', verifyToken, async (req, res) => {
             return res.status(404).json({message: 'Vault file not found'});
         }
 
-        // --- Verify PIN Hash ---
+        // Verify PIN Hash
         if (!vaultFile.accessPin) {
              console.error(`Vault file ${vaultFileId} is missing access PIN hash.`);
              return res.status(500).json({ message: 'Internal error: Vault file configuration issue.' });
@@ -193,24 +185,24 @@ router.get('/access/:id', verifyToken, async (req, res) => {
         if (!pinIsValid) {
             return res.status(403).json({ message: 'Invalid Vault PIN', needsPin: true });
         }
-        // --- End Verify PIN Hash ---
+        
 
 
-        // Self-destruct logic (remains the same)
+        // Self-destruct logic
         if (vaultFile.selfDestruct && vaultFile.destructAfter && new Date() > new Date(vaultFile.destructAfter)) {
             await vaultFile.File.update({isDeleted: true});
             await vaultFile.destroy();
             return res.status(410).json({message: 'File has been deleted due to self-destruct'});
         }
 
-        // Update access count/time (remains the same)
+        // Update access count/time
         await vaultFile.update({
             accessCount: vaultFile.accessCount + 1,
             lastAccessed: new Date(),
         });
         await logActivity('vault_access', userId, vaultFile.fileId, 'Accessed file from vault', req);
 
-        // Return file info (remains the same)
+        // Return file info
         const file = vaultFile.File;
         res.json({
             id: file.id,
@@ -229,7 +221,6 @@ router.get('/access/:id', verifyToken, async (req, res) => {
     }
 });
 
-// Update your delete route to update usage
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const vaultFileId = req.params.id;
@@ -324,13 +315,13 @@ async function checkVaultPermissions(userId, fileSize = 0) {
     // Get system-wide vault settings
     const systemSettings = await SystemSettings.findOne({ where: { id: 1 } });
     const vaultPermissions = systemSettings?.vaultPermissions || {
-      quotas: { user: 1073741824 } // Default 1GB if not configured
+      quotas: { user: 1073741824 } // Default 1GB
     };
     
     // Calculate effective quota based on role and department
     let effectiveQuota = user.vaultQuota;
     
-    // If system settings define a larger quota for this role, use that instead
+    // If system settings define a larger quota for this role
     if (vaultPermissions.quotas[user.role] && 
         (vaultPermissions.quotas[user.role] > effectiveQuota || 
          vaultPermissions.quotas[user.role] === -1)) {
@@ -339,14 +330,12 @@ async function checkVaultPermissions(userId, fileSize = 0) {
     
     // Add department bonus if applicable
     if (user.Department && user.Department.vaultQuotaBonus > 0) {
-      // If not already unlimited
       if (effectiveQuota !== -1) {
-        // --> Fix: Ensure both operands are numbers before adding <--
         effectiveQuota = Number(effectiveQuota) + Number(user.Department.vaultQuotaBonus); 
       }
     }
 
-    // --> Add this log <--
+   
     console.log(`[Vault Check] User ${userId}: Usage=${user.vaultUsage}, FileSize=${fileSize}, Calculated Quota=${effectiveQuota}`);
 
     // Check if adding this file would exceed quota
@@ -367,10 +356,9 @@ async function checkVaultPermissions(userId, fileSize = 0) {
       quota: effectiveQuota,
       usage: user.vaultUsage,
       remaining: effectiveQuota === -1 ? -1 : effectiveQuota - user.vaultUsage,
-      // requireMfa: user.Department?.requireMfa || false // Remove this line
     };
   } catch (error) {
-    console.error('Error checking vault permissions:', error); // Log the actual error
+    console.error('Error checking vault permissions:', error);
     return { allowed: false, error: 'Failed to check vault permissions' };
   }
 }

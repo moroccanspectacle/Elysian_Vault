@@ -12,7 +12,7 @@ router.get('/:shareToken', async (req, res) => {
     const shareToken = req.params.shareToken;
     console.log('Looking up share with token:', shareToken);
     
-    // First find the share without the File inclusion
+    // find the share without the File inclusion
     const share = await FileShare.findOne({
       where: {
         shareToken: shareToken,
@@ -118,6 +118,7 @@ router.get('/:shareToken/download', async (req, res) => {
   }
 });
 
+// view a shared file
 router.get('/:shareToken/view', async (req, res) => {
     console.log("View endpoint hit with token:", req.params.shareToken);
     try {
@@ -146,7 +147,6 @@ router.get('/:shareToken/view', async (req, res) => {
         }
 
         const file = share.File;
-        // Add this line to define encryptedDir
         const encryptedDir = path.join(__dirname, '../uploads/encrypted');
         const encryptedFilePath = path.join(encryptedDir, file.fileName);
 
@@ -163,7 +163,7 @@ router.get('/:shareToken/view', async (req, res) => {
         await logActivity('view', share.createdById, share.fileId, 'Viewed via share link', req);
         await share.update({ accessCount: share.accessCount + 1 });
         
-        // Set appropriate headers for the file type
+        // Set headers for the file type
         const fileType = path.extname(file.originalName).toLowerCase();
         if (fileType === '.pdf') {
             res.setHeader('Content-Type', 'application/pdf');
@@ -175,7 +175,7 @@ router.get('/:shareToken/view', async (req, res) => {
         
         res.setHeader('Content-Disposition', `inline; filename="${file.originalName}"`);
         
-        // Send file and clean up afterward
+        // Send file and clean up
         res.sendFile(decryptedFilePath, {}, (err) => {
             if (err) {
                 console.error('File view error: ', err);
