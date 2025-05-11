@@ -6,7 +6,7 @@ export const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   
-  // Only check authentication, don't redirect anywhere else
+  // Only check authentication
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

@@ -91,7 +91,7 @@ export function MfaSetup({ onComplete, onCancel, enforced = false }: MfaSetupPro
       setError(null);
       await api.mfa.verifySetup(verificationCode);
       setSuccess(true);
-      setTimeout(() => onComplete(verificationCode), 1500); // Pass the verification code to the parent component
+      setTimeout(() => onComplete(verificationCode), 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to verify MFA setup');
     } finally {

@@ -4,8 +4,8 @@ import { useAuth } from './AuthContext';
 
 interface MfaVerificationProps {
   onVerify?: (code: string) => Promise<void>;
-  onCancel?: () => void; // Add this prop
-  enforced?: boolean;    // Add this prop
+  onCancel?: () => void;
+  enforced?: boolean;
 }
 
 export function MfaVerification({ onVerify, onCancel, enforced = false }: MfaVerificationProps) {
@@ -62,7 +62,7 @@ export function MfaVerification({ onVerify, onCancel, enforced = false }: MfaVer
         await completeMfaLogin(code);
       }
     } catch (err) {
-      // Error handling...
+      console.error("Verification error:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -79,7 +79,6 @@ export function MfaVerification({ onVerify, onCancel, enforced = false }: MfaVer
     <div className="max-w-md mx-auto p-6">
       <h2 className="text-xl font-semibold text-center mb-4">Two-Factor Authentication</h2>
       
-      {/* Add cancel button if onCancel is provided */}
       {onCancel && (
         <button 
           onClick={onCancel}

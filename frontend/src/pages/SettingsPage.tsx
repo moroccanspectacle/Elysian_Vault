@@ -11,7 +11,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [showMfaSetup, setShowMfaSetup] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
-  const [isMfaEnforced, setIsMfaEnforced] = useState(false); // Add this state
+  const [isMfaEnforced, setIsMfaEnforced] = useState(false); 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
@@ -22,7 +22,7 @@ export function SettingsPage() {
       try {
         const userData = await api.profile.get();
         setMfaEnabled(userData.mfaEnabled || false);
-        setIsMfaEnforced(userData.isMfaEnforced || false); // Store enforcement status
+        setIsMfaEnforced(userData.isMfaEnforced || false);
       } catch (error) {
         console.error('Error fetching user settings:', error);
       }

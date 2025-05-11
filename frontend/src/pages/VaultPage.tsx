@@ -27,23 +27,18 @@ export function VaultPage() {
   const [vaultFiles, setVaultFiles] = useState<VaultFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewingFile, setViewingFile] = useState<{ // State for DocumentViewer props
+  const [viewingFile, setViewingFile] = useState<{
     url: string;
     name: string;
     type: string;
-    originalFileId: string; // Store original file ID for download/share from viewer
+    originalFileId: string;
   } | null>(null);
-  // const [showMfa, setShowMfa] = useState(false);
-  // const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
-  // const [actionType, setActionType] = useState<'view' | 'download' | null>(null);
-
-  // Add state for PIN modal
+  
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinActionFile, setPinActionFile] = useState<VaultFile | null>(null); // Store the full file item
   const [pinActionType, setPinActionType] = useState<'view' | 'download' | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
-  // const [viewingFileUrl, setViewingFileUrl] = useState<string | null>(null); // viewingFile state handles this now
-
+  
   const [permissions, setPermissions] = useState<{
     hasAccess: boolean;
     quota: number;
@@ -53,7 +48,7 @@ export function VaultPage() {
   } | null>(null);
 
   const navigate = useNavigate();
-  const { user } = useAuth(); // Keep user if needed
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchVaultFiles();
@@ -83,59 +78,51 @@ export function VaultPage() {
     }
   };
 
-  // --- Replace old handleAccessFile ---
   const handleAccessFile = (file: VaultFile, action: 'view' | 'download') => {
-    setPinActionFile(file); // Store the whole file object
+  setPinActionFile(file);
     setPinActionType(action);
-    setPinError(null); // Clear previous errors
-    setShowPinModal(true); // Show the PIN modal
+    setPinError(null); 
+    setShowPinModal(true);
   };
-  // --- End Replace old handleAccessFile ---
 
-  // --- Add new function to handle PIN submission ---
+  // function to handle PIN submission
   const submitVaultAccessWithPin = async (pin: string) => {
     if (!pinActionFile || !pinActionType) return;
 
     try {
         // Call the access endpoint first to verify PIN and get file details
-        // The response contains the original File ID needed for download/view URLs
-        const accessResponse = await api.vault.access(pinActionFile.id, pin); // Pass PIN
+        const accessResponse = await api.vault.access(pinActionFile.id, pin);
 
         // If PIN is valid, proceed with the action
         if (pinActionType === 'view') {
             // Get the temporary signed URL for viewing using the original File ID
             const viewUrl = await api.files.getViewUrl(accessResponse.fileId);
-            setViewingFile({ // Set state to open DocumentViewer
+            setViewingFile({
                 url: viewUrl,
-                name: accessResponse.fileName, // Use name from access response
-                type: accessResponse.fileType, // Use type from access response
-                originalFileId: accessResponse.fileId // Store original ID
+                name: accessResponse.fileName, 
+                type: accessResponse.fileType,
+                originalFileId: accessResponse.fileId
             });
         } else if (pinActionType === 'download') {
             // Trigger download using the original File ID
             await api.files.download(accessResponse.fileId);
         }
 
-        setShowPinModal(false); // Close modal on success
+        setShowPinModal(false);
         setPinActionFile(null);
         setPinActionType(null);
-        fetchVaultFiles(); // Refresh last accessed time in the list
+        fetchVaultFiles();
 
     } catch (error: any) {
         console.error(`Failed to ${pinActionType} vault file:`, error);
          if (error.needsPin) {
-             // If backend specifically says PIN is needed/invalid
              // Throw error so modal can display it
              throw new Error(error.message || 'Invalid PIN');
          } else {
-             // Throw other errors
              throw new Error(error.message || `Failed to ${pinActionType} file.`);
          }
     }
   };
-  // --- End Add new function ---
-
-
   const handleRemoveFromVault = async (vaultFileId: string) => {
     if (window.confirm('Remove this file from the vault? The file will not be deleted.')) {
       try {
@@ -272,22 +259,21 @@ export function VaultPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        {/* --- Update onClick handlers --- */}
+                        
                         <button
-                          onClick={() => handleAccessFile(file, 'view')} // Pass the whole file object
+                          onClick={() => handleAccessFile(file, 'view')}
                           className="text-primary-600 hover:text-primary-900"
                           title="View File"
                         >
                           <Eye className="w-5 h-5" />
                         </button>
                         <button
-                          onClick={() => handleAccessFile(file, 'download')} // Pass the whole file object
+                          onClick={() => handleAccessFile(file, 'download')}
                           className="text-primary-600 hover:text-primary-900"
                           title="Download File"
                         >
                           <Download className="w-5 h-5" />
                         </button>
-                        {/* --- End Update onClick handlers --- */}
                         <button
                           onClick={() => handleRemoveFromVault(file.id)}
                           className="text-red-600 hover:text-red-900"
@@ -304,8 +290,6 @@ export function VaultPage() {
           </div>
         )}
       </div>
-
-      {/* --- Add PinEntryModal --- */}
       <PinEntryModal
           isOpen={showPinModal && !!pinActionFile}
           onClose={() => {
@@ -316,18 +300,18 @@ export function VaultPage() {
           onSubmit={submitVaultAccessWithPin}
           title="Enter Vault Access PIN"
           description={`Enter the 6-digit PIN for "${pinActionFile?.fileName || 'this file'}" to ${pinActionType || 'access'} it.`}
-          errorMessage={pinError} // Pass pinError state here
+          errorMessage={pinError}
       />
-      {/* --- End Add PinEntryModal --- */}
+     
 
 
-      {/* Modify DocumentViewer trigger */}
+     
       {viewingFile && (
           <DocumentViewer
               fileUrl={viewingFile.url}
               fileName={viewingFile.name}
               fileType={viewingFile.type}
-              onClose={() => setViewingFile(null)} // Clear viewingFile state on close
+              onClose={() => setViewingFile(null)}
               onDownload={() => {
                   // Re-trigger PIN check for download from viewer
                   const fileToDownload = vaultFiles.find(f => f.fileId === viewingFile.originalFileId);
@@ -335,7 +319,7 @@ export function VaultPage() {
                       handleAccessFile(fileToDownload, 'download');
                   }
               }}
-              onShare={() => { /* Add share logic if needed */ }}
+              
           />
       )}
     </Layout>

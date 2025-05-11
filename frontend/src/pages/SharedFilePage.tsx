@@ -6,11 +6,10 @@ import { DocumentViewer } from '../components/DocumentViewer';
 interface SharedFilePageProps {}
 
 export function SharedFilePage({}: SharedFilePageProps) {
-  // Update this line to match the :shareToken parameter name in your route
   const { shareToken } = useParams<{ shareToken: string }>();
   console.log("Token from URL:", shareToken);
   
-  // Then use shareToken instead of token in the rest of your component
+  // using shareToken instead of token
   const [fileInfo, setFileInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +27,10 @@ export function SharedFilePage({}: SharedFilePageProps) {
           return;
         }
         
-        // Also update all occurrences of token to shareToken
+       
         console.log("Fetching shared file with token:", shareToken);
         
-        // Make sure token doesn't have any unwanted characters
+        
         const cleanToken = shareToken.trim();
         const response = await fetch(`http://localhost:3000/api/share/${cleanToken}`, {
           method: 'GET'
@@ -62,7 +61,6 @@ export function SharedFilePage({}: SharedFilePageProps) {
     if (!fileInfo || !fileInfo.permissions.canDownload) return;
     
     try {
-      // Use the proxy for API requests but full URL for downloads
       window.location.href = `http://localhost:3000/api/share/${shareToken}/download`;
     } catch (err) {
       console.error('Download error:', err);

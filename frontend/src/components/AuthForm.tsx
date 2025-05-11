@@ -31,7 +31,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const mfaToken = sessionStorage.getItem('mfa-setup-token');
     console.log('Available MFA token in AuthForm:', mfaToken ? 'present' : 'missing');
     
-    // Also list all session storage items for debugging
+    // list all session storage items for debugging
     const allKeys = [];
     for (let i = 0; i < sessionStorage.length; i++) {
       allKeys.push(sessionStorage.key(i));
@@ -58,7 +58,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // For registration, validate password before submitting
+    // For registration validate password before submitting
     if (mode === 'register') {
       const { valid, errors } = validatePassword(formData.password);
       if (!valid) {
@@ -72,8 +72,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     try {
       if (mode === 'login') {
         const result = await login(formData.email, formData.password, rememberMe);
-        // If MFA is required, the MfaVerification component will be shown
-        // and this component will not redirect
+        // If MFA is required, the MfaVerification component will be shown and this component will not redirect
         if (!result?.mfaRequired) {
           navigate('/dashboard');
         }
@@ -97,7 +96,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
   };
 
-  // If MFA is required during login, show the MFA verification component
+  // If MFA is required during login show the MFA verification component
   if (mfaRequired) {
     return <MfaVerification onVerify={handleMfaVerify} />;
   }
@@ -105,7 +104,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   if (mfaSetupRequired) {
     console.log("Rendering MFA setup screen");
     
-    // Force the URL to match what we're showing to avoid navigation issues
+    // Force the URL to match what is showing to avoid navigation issues
     if (window.location.pathname !== '/mfa-setup') {
       window.history.replaceState(null, '', '/mfa-setup');
     }

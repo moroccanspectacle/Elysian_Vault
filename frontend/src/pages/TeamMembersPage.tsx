@@ -28,7 +28,7 @@ interface Team {
   id: string;
   name: string;
   ownerId: number;
-  role?: 'owner' | 'admin' | 'member'; // Add this property
+  role?: 'owner' | 'admin' | 'member';
 }
 
 export function TeamMembersPage() {
@@ -71,20 +71,19 @@ export function TeamMembersPage() {
           if (teamData.status === 'invited') {
             console.log('[TeamMembersPage] User is invited, redirecting back to team details.');
             navigate(`/teams/${teamId}`);
-            // No need to setIsLoading(false) here as navigation will unmount
-            return; // Stop further execution
+            
+            return;
           }
 
-          // If active, proceed to load members and settings
+          // proceed to load members and settings
           await fetchMembers(teamId);
-          await fetchTeamSettings(); // Keep fetching settings if needed for permissions
+          await fetchTeamSettings();
 
         } catch (err: any) {
           console.error('Failed to fetch initial team data:', err);
           setError(err.message || 'Failed to load team information');
         } finally {
-          // Only set loading false if we didn't redirect
-          // Check if component is still mounted might be safer, but this works if redirect happens
+          // Only set loading false if no redirect
           if (window.location.pathname.includes(`/teams/${teamId}/members`)) {
              setIsLoading(false);
           }
@@ -95,9 +94,9 @@ export function TeamMembersPage() {
       setError("Team ID not found.");
       setIsLoading(false);
     }
-  }, [teamId, navigate]); // Add navigate to dependencies
+  }, [teamId, navigate]);
 
-  // Separate function to fetch members, called only if status is active
+  // Separate function to fetch members called only if status is active
   const fetchMembers = async (id: string) => {
     try {
       const membersData = await api.teams.getMembers(id);
@@ -109,13 +108,12 @@ export function TeamMembersPage() {
     }
   };
 
-  // Keep fetchTeamSettings as it was, called only if status is active
   const fetchTeamSettings = async () => {
     try {
       const settings = await api.teams.getSettings(teamId!);
       setTeamSettings(settings);
       
-      // Fix: Add proper parentheses and null checks
+      
       if (team && (team.role === 'owner' || team.role === 'admin')) {
         setCanInviteMembers(true);
       } else if (settings && settings.memberPermissions) {
@@ -148,7 +146,7 @@ export function TeamMembersPage() {
       setSelectedMember(null);
     } catch (err) {
       console.error('Failed to remove member:', err);
-      // Show error message
+
     }
   };
   
@@ -158,7 +156,7 @@ export function TeamMembersPage() {
     try {
       await api.teams.updateMemberRole(teamId, memberId, newRole);
       
-      // Update the members list
+      
       const updatedMembers = members.map(m => {
         if (m.id === memberId) {
           return { ...m, role: newRole };
@@ -179,7 +177,7 @@ export function TeamMembersPage() {
       setShowMemberMenu(null);
     } catch (err) {
       console.error('Failed to update member role:', err);
-      // Show error message
+      
     }
   };
   
@@ -188,15 +186,14 @@ export function TeamMembersPage() {
     
     try {
       await api.teams.resendInvite(teamId, memberId);
-      // Show success message
+      
       setShowMemberMenu(null);
     } catch (err) {
       console.error('Failed to resend invite:', err);
-      // Show error message
+      
     }
   };
   
-  // Modify the loading check to handle the case where team is fetched but status is invited
   if (isLoading) {
     return (
       <Layout>
@@ -207,7 +204,7 @@ export function TeamMembersPage() {
     );
   }
 
-  // Error handling remains similar, but might show briefly before redirect
+  
   if (error && !isLoading) { // Check isLoading to avoid showing error during redirect
     return (
       <Layout>
@@ -220,7 +217,7 @@ export function TeamMembersPage() {
 
   // Ensure team exists before rendering main content
   if (!team) {
-      // Render null or a minimal layout while redirecting or if team is null
+      
       return null;
   }
 

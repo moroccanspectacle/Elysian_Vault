@@ -17,10 +17,10 @@ interface AuthContextType {
     profileImage: string | null;
   }>) => void;
   mfaRequired: boolean;
-  mfaSetupRequired: boolean; // Add this property
+  mfaSetupRequired: boolean;
   tempUserId: string | null;
-  refreshUserData: () => Promise<void>; // Add this
-  resetMfaSetupState: () => void; // Add this
+  refreshUserData: () => Promise<void>;
+  resetMfaSetupState: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,20 +31,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [tempUserId, setTempUserId] = useState<string | null>(null);
-  const [rememberMeOption, setRememberMeOption] = useState(false); // Store rememberMe state
+  const [rememberMeOption, setRememberMeOption] = useState(false);
   const [mfaSetupRequired, setMfaSetupRequired] = useState(false);
-  const [blockRedirects, setBlockRedirects] = useState(false); // Add a new state variable to block redirects during MFA setup
+  const [blockRedirects, setBlockRedirects] = useState(false);
   const navigate = useNavigate();
 
-  // Modify the checkLoggedIn function
   const checkLoggedIn = async () => {
     // Check all possible MFA setup flags
     const mfaSetupInProgress = sessionStorage.getItem('mfa-setup-in-progress') === 'true';
     const localStorageBlock = localStorage.getItem('mfa-setup-block') === 'true';
     
-    // If ANY flag indicates setup is in progress, don't continue
+    // If any flag indicates setup is in progress, don't continue
     if (mfaSetupInProgress || localStorageBlock || blockRedirects || mfaSetupRequired) {
-      return; // Exit immediately
+      return;
     }
     
     const token = localStorage.getItem('auth-token');
@@ -61,25 +60,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = await response.json();
           setUser(userData);
           
-          // CRITICAL FIX: Check needsMfaSetup flag from backend
+          // Check needsMfaSetup flag from backend
           if (userData.needsMfaSetup) {
             setMfaSetupRequired(true);
             setIsLoading(false);
-            return; // IMPORTANT: Exit early to prevent redirect
+            return;
           }
           
           // Only redirect if not on an appropriate page and not setting up MFA
-          if (!mfaSetupRequired) { // Only redirect if not in MFA setup
+          if (!mfaSetupRequired) {
             const noRedirectPaths = ['/profile', '/settings', '/admin', '/dashboard', '/teams', '/shared-links', '/vault'];
             const currentPath = window.location.pathname;
             
-            // Add more detailed logging
+            //logs
             console.log('Current path:', currentPath);
             console.log('Path check result:', noRedirectPaths.some(path => 
               currentPath.toLowerCase().includes(path.toLowerCase())
             ));
             
-            // Make path checking more robust with case-insensitive comparison and includes instead of startsWith
             if (!noRedirectPaths.some(path => currentPath.toLowerCase().includes(path.toLowerCase()))) {
               console.log('Redirecting from', currentPath);
               if (userData.role === 'admin' || userData.role === 'super_admin') {
@@ -104,12 +102,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update the initial login check to include redirection logic
   useEffect(() => {
     checkLoggedIn();
-  }, [navigate]); // Add navigate as a dependency
+  }, [navigate]);
 
-  // Update the login function to immediately set the MFA setup flag
   const login = async (email: string, password: string, rememberMe = false) => {
     setError(null);
     setRememberMeOption(rememberMe);
@@ -128,17 +124,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         data = await response.text();
       }
       
-      // If 2FA setup is needed, IMMEDIATELY block redirects with stronger flags
+      // If 2FA setup is needed, block redirects with stronger flags
       if (typeof data === 'object' && data.mfaRequired && data.setupRequired) {
        
         console.log('[AuthContext Login] MFA Setup Required. Received data:', JSON.stringify(data));
         console.log(`[AuthContext Login] data.setupToken value: ${data.setupToken}`);
         
 
-        // IMPORTANT: Store userId in sessionStorage with the correct key
+        
         sessionStorage.setItem('temp-user-id', data.userId);
 
-        // Store the setup token (existing code)
+        // Store the setup token
         if (data.setupToken) {
           sessionStorage.setItem('mfa-setup-token', data.setupToken);
           console.log('[AuthContext Login] Stored mfa-setup-token in sessionStorage.'); // Log success
@@ -150,10 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setMfaSetupRequired(true);
         setBlockRedirects(true);
 
-        // Make sure the token is stored (redundant check, but keep for now)
-        // if (data.setupToken) {
-        //   sessionStorage.setItem('mfa-setup-token', data.setupToken);
-        // }
+        
 
         sessionStorage.setItem('mfa-setup-in-progress', 'true');
         localStorage.setItem('mfa-setup-block', 'true');
@@ -161,14 +154,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { mfaRequired: true, setupRequired: true };
       }
       
-      // Regular MFA required - just verification
+      // Regular MFA required
       if (typeof data === 'object' && data.mfaRequired) {
         setTempUserId(data.userId);
         setMfaRequired(true);
         return { mfaRequired: true };
       }
 
-      // Clean up any lingering MFA setup flags if the response doesn't require setup
+      // Clean any MFA setup flags if the response doesn't require it
       if (!(typeof data === 'object' && data.mfaRequired && data.setupRequired)) {
         sessionStorage.removeItem('mfa-setup-in-progress');
         sessionStorage.removeItem('mfa-setup-token');
@@ -177,8 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setMfaSetupRequired(false);
       }
 
-      // Normal login flow continues...
-      // Store token in localStorage only, ignoring rememberMe
       const token = typeof data === 'object' ? data.token : data;
       localStorage.setItem('auth-token', token);
       
@@ -201,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             navigate('/dashboard');
           }
-        }, 100); // should be enough
+        }, 100);
       }
 
       return { mfaRequired: false };
@@ -211,7 +202,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update the completeMfaLogin function
   const completeMfaLogin = async (token: string) => {
     setError(null);
     try {
@@ -219,7 +209,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No pending MFA verification');
       }
       
-      // Important: Include isSetupMode flag to tell backend this was a setup completion
+      // Include isSetupMode flag to tell backend this was a setup completion
       const isSetupMode = mfaSetupRequired;
       
       const response = await fetch('http://localhost:3000/api/user/login/verify-mfa', {
@@ -231,7 +221,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userId: tempUserId, 
           token,
           rememberMe: rememberMeOption,
-          isSetupMode // Add this flag
+          isSetupMode
         }),
       });
 
@@ -242,7 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const jwtToken = await response.text();
       
-      // Store in localStorage only
+      
       localStorage.setItem('auth-token', jwtToken);
       
       // Get user info
@@ -361,15 +351,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         isLoading,
         mfaRequired,
-        mfaSetupRequired, // Add this
+        mfaSetupRequired,
         tempUserId,
         login,
         completeMfaLogin,
         register,
         logout,
         updateUser,
-        refreshUserData, // Add this
-        resetMfaSetupState, // Add this
+        refreshUserData, 
+        resetMfaSetupState,
         error
       }}
     >

@@ -14,14 +14,12 @@ export function TeamSettingsPage() {
   const { teamId } = useParams<{ teamId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [team, setTeam] = useState<any>(null); // Keep state for team name display
+  const [team, setTeam] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
   const [pendingSaveData, setPendingSaveData] = useState<any>(null);
-  
-  // Settings states
   const [isUpdating, setIsUpdating] = useState(false);
   const [memberPermissions, setMemberPermissions] = useState({
     canInviteMembers: false,
@@ -43,14 +41,14 @@ export function TeamSettingsPage() {
           const teamData = await api.teams.getTeam(teamId);
           setTeam(teamData); // Store basic team data for display
 
-          // If user is invited, redirect back to team details page
+          // If user is invited redirect back to team details page
           if (teamData.status === 'invited') {
             console.log('[TeamSettingsPage] User is invited, redirecting back to team details.');
             navigate(`/teams/${teamId}`);
-            return; // Stop further execution
+            return;
           }
 
-          // If active, proceed to load actual settings
+          // If active proceed to load actual settings
           await fetchTeamSettingsData(teamId);
 
         } catch (err: any) {
@@ -67,9 +65,9 @@ export function TeamSettingsPage() {
       setError("Team ID not found.");
       setIsLoading(false);
     }
-  }, [teamId, navigate]); // Add navigate
+  }, [teamId, navigate]);
 
-  // Renamed original fetch function
+  
   const fetchTeamSettingsData = async (id: string) => {
     try {
       const settingsData = await api.teams.getSettings(id);
@@ -167,7 +165,7 @@ export function TeamSettingsPage() {
 
    // Ensure team exists before rendering main content
    if (!team || team.status === 'invited') {
-       return null; // Render null while redirecting
+       return null;
    }
 
   return (

@@ -63,7 +63,6 @@ export function LandingPage() {
   const opacity = useTransform(scrollYProgress, [0, 0.05], [1, 0]);
   
   useEffect(() => {
-    // Smooth scroll to sections when clicking navigation
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function(this: HTMLAnchorElement, e: Event) {
         e.preventDefault();

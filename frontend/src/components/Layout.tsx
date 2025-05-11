@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'; // Import useEffect
+import React, { useState, useEffect } from 'react';
 import { Files, Activity, Settings, Upload, Bell, User, Share2, Users, Shield } from 'lucide-react';
-import { useNavigate, Link, useLocation } from 'react-router-dom'; // Import useLocation
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { ProfileMenu } from './ProfileMenu';
 import { useAuth } from './AuthContext';
 import { FileUploadModal } from './FileUploadModal';
@@ -9,7 +9,6 @@ import { NotificationDropdown } from './NotificationDropdown';
 interface LayoutProps {
   children: React.ReactNode;
   onFileUploaded?: () => void;
-  // Removed currentView/setCurrentView props - manage active state via route
 }
 
 export function Layout({ children, onFileUploaded }: LayoutProps) {
@@ -21,13 +20,12 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const { user } = useAuth();
 
-  // Effect to update activeTab based on the current route
+ 
   useEffect(() => {
     const path = location.pathname;
-    const currentView = location.state?.view; // Check for view state passed during navigation
+    const currentView = location.state?.view;
 
     if (path === '/dashboard') {
-      // Check state passed via navigate to differentiate between Files and Activity on the same path
       setActiveTab(currentView === 'activity' ? 'Activity' : 'Files');
     } else if (path === '/teams') {
       setActiveTab('Teams');
@@ -40,13 +38,10 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
     } else if (path === '/admin') {
       setActiveTab('Admin');
     } else {
-      // Optional: Handle default or other paths if necessary
-      // setActiveTab(''); // Or set to a default if needed
     }
   }, [location.pathname, location.state]); // Re-run when path or state changes
 
-  // Remove unused handleTabClick and safeNavigate functions
-  // ...
+
 
   const handleUpload = () => {
     setShowUploadModal(true);
@@ -71,14 +66,14 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
         <div className="p-6 border-b border-neutral-100">
           <h1
             className="text-2xl font-display font-bold bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent cursor-pointer"
-            onClick={() => navigate('/')} // Navigate to home/root
+            onClick={() => navigate('/')}
           >
             Elysian Vault
           </h1>
         </div>
         <nav className="mt-6 flex-grow">
           {[
-            { icon: Files, label: 'Files', path: '/dashboard', view: 'files' }, // Add view:'files' for clarity
+            { icon: Files, label: 'Files', path: '/dashboard', view: 'files' },
             { icon: Users, label: 'Teams', path: '/teams' },
             { icon: Share2, label: 'Shared Links', path: '/shared-links' },
             { icon: Activity, label: 'Activity', path: '/dashboard', view: 'activity' },
@@ -93,7 +88,6 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
                   : 'text-neutral-600'
               } hover:bg-neutral-50 transition-all duration-200`}
               onClick={() => {
-                // Navigate and pass 'view' state if defined (for Dashboard)
                 navigate(item.path, { replace: true, state: { view: item.view } });
               }}
             >
@@ -104,7 +98,7 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
           {user && (user.role === 'admin' || user.role === 'super_admin') && (
             <Link
               to="/admin"
-              className={`w-full flex items-center px-6 py-4 ${ // Use button styling
+              className={`w-full flex items-center px-6 py-4 ${
                 activeTab === 'Admin'
                   ? 'text-primary-600 bg-primary-50 border-r-4 border-primary-500'
                   : 'text-neutral-600'
@@ -124,7 +118,6 @@ export function Layout({ children, onFileUploaded }: LayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* ... Header ... */}
          <header className="bg-white m-4 rounded-xl flex items-center justify-between px-6 py-3 shadow-sm">
           <button
             className="bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white px-5 py-2.5 rounded-lg flex items-center transition-all duration-300 shadow-md hover:shadow-lg font-medium"

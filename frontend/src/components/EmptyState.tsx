@@ -5,7 +5,7 @@ interface EmptyStateProps {
   icon: LucideIcon;
   title: string;
   description: string;
-  action?: React.ReactNode; // Add this line to accept an optional action prop
+  action?: React.ReactNode;
 }
 
 export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
@@ -14,7 +14,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       <Icon className="w-12 h-12 text-neutral-400 mb-4" />
       <h3 className="text-lg font-medium text-neutral-700 mb-1">{title}</h3>
       <p className="text-neutral-500 text-center max-w-md mb-4">{description}</p>
-      {action && action} {/* Render the action if it's provided */}
+      {action && action} {/* Render the action if provided */}
     </div>
   );
 }

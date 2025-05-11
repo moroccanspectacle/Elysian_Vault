@@ -142,8 +142,8 @@ export function TeamFilesPage() {
   const handleDelete = async (file: TeamFile) => {
     if (confirm(`Are you sure you want to delete ${file.originalName}?`)) {
       try {
-        await api.files.delete(file.id); // Use the correct API function for deleting files
-        fetchFiles(teamId!); // Refresh the file list
+        await api.files.delete(file.id);
+        fetchFiles(teamId!); 
       } catch (error) {
         console.error('Delete error:', error);
         setError(`Failed to delete file: ${error instanceof Error ? error.message : String(error)}`);

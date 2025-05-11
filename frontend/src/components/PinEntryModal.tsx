@@ -22,10 +22,8 @@ export function PinEntryModal({
   const [pin, setPin] = useState<string[]>(Array(6).fill(''));
   const [localError, setLocalError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // --- Add state for self-destruct ---
   const [enableSelfDestruct, setEnableSelfDestruct] = useState(false);
   const [destructDate, setDestructDate] = useState<string>(''); // Store as string for input
-  // --- End Add state ---
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Reset state when modal opens/closes
@@ -34,10 +32,8 @@ export function PinEntryModal({
       setPin(Array(6).fill(''));
       setLocalError(null);
       setIsSubmitting(false);
-      // --- Reset self-destruct state ---
       setEnableSelfDestruct(false);
       setDestructDate('');
-      // --- End Reset ---
       inputRefs.current[0]?.focus();
     }
   }, [isOpen]);
@@ -72,7 +68,7 @@ export function PinEntryModal({
     if (/^\d{6}$/.test(pastedData)) {
       const digits = pastedData.split('');
       setPin(digits);
-      inputRefs.current[5]?.focus(); // Focus last input after paste
+      inputRefs.current[5]?.focus();
     }
   };
 
@@ -84,7 +80,6 @@ export function PinEntryModal({
       return;
     }
 
-    // --- Validate destruct date if self-destruct is enabled ---
     let destructDateObj: Date | null = null;
     if (enableSelfDestruct) {
       if (!destructDate) {
@@ -97,7 +92,6 @@ export function PinEntryModal({
         return;
       }
     }
-    // --- End Validation ---
 
     setIsSubmitting(true);
     setLocalError(null); // Clear local error before submitting
@@ -105,7 +99,6 @@ export function PinEntryModal({
     try {
       // Pass self-destruct options to onSubmit
       await onSubmit(enteredPin, enableSelfDestruct, destructDateObj);
-      // No need to call onClose here, parent component handles it on success
     } catch (error: any) {
       setLocalError(error.message || 'An unexpected error occurred.');
     } finally {
@@ -113,13 +106,11 @@ export function PinEntryModal({
     }
   };
 
-  // --- Get minimum date for date input (tomorrow) ---
   const getMinDate = () => {
     const today = new Date();
-    today.setDate(today.getDate() + 1); // Start from tomorrow
+    today.setDate(today.getDate() + 1);
     return today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
   };
-  // --- End Min Date ---
 
   if (!isOpen) return null;
 

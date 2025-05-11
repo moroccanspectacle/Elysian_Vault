@@ -89,14 +89,14 @@ export function EditTeamModal({ team, onClose, onSave }: EditTeamModalProps) {
       
       let updatedTeam;
       
-      // First, update team details
+      // update team details
       updatedTeam = await api.teams.update(team.id, {
         name,
         description,
         storageQuota: quotaInBytes
       });
       
-      // If avatar is updated, send separately
+      // If avatar is updated send separately
       if (avatar) {
         const formData = new FormData();
         formData.append('avatar', avatar);

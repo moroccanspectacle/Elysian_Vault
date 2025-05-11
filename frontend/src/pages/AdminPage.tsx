@@ -8,9 +8,9 @@ import { api } from '../services/api';
 import { CreateUserModal } from '../components/CreateUserModal';
 import { DepartmentManagement } from '../components/DepartmentManagement';
 import { ConfirmationModal } from '../components/ConfirmationModal';
-import { ActivityTable } from '../components/ActivityTable'; // Import the ActivityTable component
-import { Button } from '../components/Button'; // Import Button
-import type { ActivityLog } from '../types'; // Assuming ActivityLog type is defined in types.ts
+import { ActivityTable } from '../components/ActivityTable';
+import { Button } from '../components/Button';
+import type { ActivityLog } from '../types';
 
 interface User {
   id: string;
@@ -25,7 +25,7 @@ interface User {
     vaultQuotaBonus: number;
     requireMfa: boolean;
   };
-  departmentId?: number; // Added departmentId
+  departmentId?: number;
 }
 
 interface SystemSettings {

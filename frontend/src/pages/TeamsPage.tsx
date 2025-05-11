@@ -33,13 +33,12 @@ export function TeamsPage() {
       setIsLoading(true);
       const response = await api.teams.list();
       
-      // If we get an error object instead of an array
       if (response && response.error) {
         console.error('API error:', response.error);
         setTeams([]);
         setError(response.error || 'Failed to load teams');
       }
-      // Ensure we always have an array
+
       else if (Array.isArray(response)) {
         setTeams(response);
       } else {
@@ -121,12 +120,8 @@ export function TeamsPage() {
         <CreateTeamModal 
           onClose={() => setShowCreateModal(false)}
           onTeamCreated={(newTeam) => {
-            // Option 1: Add the team to the existing array
-            setTeams([...teams, newTeam]);
-            
-            // Option 2: Or refresh the entire list to be sure
-            // fetchTeams(); 
-            
+            // Add the team to the existing array
+            setTeams([...teams, newTeam]);            
             setShowCreateModal(false);
           }}
         />

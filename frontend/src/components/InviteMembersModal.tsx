@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, UserPlus, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { api } from '../services/api';
-import Select, { StylesConfig } from 'react-select'; // Import react-select
-import debounce from 'lodash/debounce'; // Import debounce
+import Select, { StylesConfig } from 'react-select'; 
+import debounce from 'lodash/debounce';
 
 interface InviteMembersModalProps {
   teamId: string;
   onClose: () => void;
-  onInvite: (newMembers: any[]) => void; // Keep existing prop for simplicity
+  onInvite: (newMembers: any[]) => void;
 }
 
 // Define User type for search results
@@ -21,24 +21,24 @@ interface SearchUser {
 
 // Define option type for react-select
 interface UserOption {
-  value: number; // User ID
-  label: string; // Display string (e.g., "username (email)")
-  user: SearchUser; // Store the full user object
+  value: number; // UserID
+  label: string;
+  user: SearchUser;
 }
 
 export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersModalProps) {
-  const [selectedUser, setSelectedUser] = useState<UserOption | null>(null); // State for selected user
+  const [selectedUser, setSelectedUser] = useState<UserOption | null>(null);
   const [role, setRole] = useState<'member' | 'admin'>('member');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState(''); // State for search input
-  const [options, setOptions] = useState<UserOption[]>([]); // State for dropdown options
-  const [isSearching, setIsSearching] = useState(false); // State for search loading indicator
+  const [searchQuery, setSearchQuery] = useState('');
+  const [options, setOptions] = useState<UserOption[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Debounced search function
   const debouncedSearch = useCallback(
     debounce(async (query: string) => {
-      if (query.length < 2) { // Only search if query is long enough
+      if (query.length < 2) {
         setOptions([]);
         setIsSearching(false);
         return;
@@ -87,7 +87,7 @@ export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersM
 
       // Pass the newly invited member data back (adjust format if needed)
       onInvite([newMemberData]);
-      onClose(); // Close modal on success
+      onClose();
     } catch (err: any) {
       console.error('Failed to invite member:', err);
       setError(err.message || 'An unexpected error occurred.');
@@ -96,23 +96,22 @@ export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersM
     }
   };
 
-  // Custom styles for react-select to match Tailwind theme (optional)
   const selectStyles: StylesConfig<UserOption, false> = {
     control: (provided) => ({
       ...provided,
-      borderColor: '#D1D5DB', // gray-300
+      borderColor: '#D1D5DB', 
       '&:hover': {
-        borderColor: '#9CA3AF', // gray-400
+        borderColor: '#9CA3AF',
       },
       boxShadow: 'none',
       minHeight: '42px',
     }),
     option: (provided, state) => ({
       ...provided,
-      backgroundColor: state.isSelected ? '#1E3A8A' : state.isFocused ? '#DBEAFE' : undefined, // primary-800, blue-100
-      color: state.isSelected ? 'white' : '#1F2937', // gray-800
+      backgroundColor: state.isSelected ? '#1E3A8A' : state.isFocused ? '#DBEAFE' : undefined,
+      color: state.isSelected ? 'white' : '#1F2937',
       ':active': {
-        backgroundColor: state.isSelected ? '#1E3A8A' : '#BFDBFE', // primary-800, blue-200
+        backgroundColor: state.isSelected ? '#1E3A8A' : '#BFDBFE',
       },
     }),
     input: (provided) => ({
@@ -126,9 +125,9 @@ export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersM
     }),
     placeholder: (provided) => ({
       ...provided,
-      color: '#6B7280', // gray-500
+      color: '#6B7280',
     }),
-    // Add more styles as needed
+
   };
 
   return (
@@ -189,7 +188,7 @@ export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersM
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
-              {/* Add 'owner' if applicable, but usually owner is assigned on creation */}
+              
             </select>
           </div>
         </div>
@@ -203,7 +202,7 @@ export function InviteMembersModal({ teamId, onClose, onInvite }: InviteMembersM
             variant="primary"
             onClick={handleInvite}
             isLoading={isLoading}
-            disabled={!selectedUser || isLoading} // Disable if no user selected or loading
+            disabled={!selectedUser || isLoading}
           >
             Send Invitation
           </Button>

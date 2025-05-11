@@ -9,7 +9,6 @@ interface SystemSettings {
 }
 
 export const api = {
-  // Replace your authFetch function with this more robust implementation
   authFetch: async (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('auth-token');
     const mfaSetupToken = sessionStorage.getItem('mfa-setup-token');
@@ -21,7 +20,6 @@ export const api = {
       isMfaSetupRequest: url.includes('/mfa/')
     });
     
-    // Fix the headers type definition
     const defaultHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -41,16 +39,15 @@ export const api = {
       mergedHeaders['mfa-setup-token'] = mfaSetupToken;
     }
 
-    // --- Add Logging for Final Options ---
+    // Add Logging for Final Options
     const finalOptions = {
-      ...options, // Spread original options (like method, body)
-      headers: mergedHeaders // Use the fully constructed headers
+      ...options,
+      headers: mergedHeaders
     };
-    // Log only for the specific path we are debugging
+    // Log only for the specific debugging path 
     if (url.startsWith('/vault/access/')) {
         console.log(`[authFetch] Final options for ${url}:`, JSON.stringify(finalOptions, null, 2));
     }
-    // --- End Logging ---
 
     // Make the request with final options
     const response = await fetch(`${API_URL}${url}`, finalOptions);
@@ -61,9 +58,7 @@ export const api = {
       ok: response.ok
     });
     
-    // Error handling
     if (response.status === 401) {
-      // Special handling for MFA setup
       if (url.includes('/mfa/')) {
         console.error('Authentication failed for MFA setup');
         throw new Error('Authentication failed for MFA setup');
@@ -82,7 +77,6 @@ export const api = {
   // File operations
   files: {
     list: async () => {
-      // Update to use the correct endpoint from our backend
       const response = await api.authFetch('/files/list');
       return response.json();
     },
@@ -95,7 +89,7 @@ export const api = {
         
         formData.append('file', file);
         
-        // Add teamId to the form data if it exists
+        // Add teamId to the form data
         if (teamId) {
           formData.append('teamId', teamId);
         }
@@ -161,7 +155,7 @@ export const api = {
         const a = document.createElement('a');
         a.href = url;
         
-        // Get filename from Content-Disposition header if available
+        // Get filename from Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
         const filenameMatch = contentDisposition && contentDisposition.match(/filename="(.+)"/);
         const filename = filenameMatch ? filenameMatch[1] : `file-${fileId}`;
@@ -180,25 +174,22 @@ export const api = {
     },
     
     delete: async (fileId: string) => {
-      // Update to use the correct endpoint from our backend
-      // Remove the '/delete' part from the path
-      const response = await api.authFetch(`/files/${fileId}`, { // <-- Corrected path
+      const response = await api.authFetch(`/files/${fileId}`, {
         method: 'DELETE'
       });
-      // Add error handling in case the backend sends a non-JSON error on failure
       if (!response.ok) {
         let errorMsg = `Failed to delete file (Status: ${response.status})`;
         try {
             const errorData = await response.json();
             errorMsg = errorData.error || errorMsg;
         } catch (e) {
-            // If parsing JSON fails, use the status text or default message
+            // If parsing JSON fail use the status text or default message
             errorMsg = response.statusText || errorMsg;
             console.error("Failed to parse error response as JSON:", await response.text().catch(() => ''));
         }
         throw new Error(errorMsg);
       }
-      return response.json(); // Assuming successful delete returns JSON like { message: '...' }
+      return response.json();
     },
 
     verifyIntegrity: async (fileId: string) => {
@@ -260,7 +251,7 @@ export const api = {
       
       const token = localStorage.getItem('auth-token');
       const response = await fetch(`${API_URL}/profile/image`, {
-        method: 'PUT', // Change back to PUT to match backend
+        method: 'PUT',
         headers: {
           'auth-token': token || ''
         },
@@ -284,7 +275,7 @@ export const api = {
         headers: {
           'Content-Type': 'application/json'
         },
-        // Add empty body to ensure proper POST request
+        // Adding empty body to ensure proper POST request
         body: JSON.stringify({})
       });
       
@@ -299,7 +290,7 @@ export const api = {
       const response = await api.authFetch('/mfa/verify-setup', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json' // Add this header
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({token})
       });
@@ -329,9 +320,7 @@ export const api = {
       });
       return response.json();
     },
-    // Add this direct setup method that doesn't use authFetch
     directSetup: async () => {
-      // Get both tokens for verification
       const mfaSetupToken = sessionStorage.getItem('mfa-setup-token');
       const token = localStorage.getItem('auth-token');
       
@@ -340,12 +329,10 @@ export const api = {
         authToken: token ? 'present' : 'missing'
       });
       
-      // Include all possible auth headers
       const headers: Record<string, string> = {
         'Content-Type': 'application/json'
       };
       
-      // Try both tokens
       if (mfaSetupToken) {
         headers['mfa-setup-token'] = mfaSetupToken;
       }
@@ -361,7 +348,6 @@ export const api = {
         headers,
         body: JSON.stringify({
           setupToken: mfaSetupToken,
-          // Add empty body to avoid issues with some servers
         })
       });
       
@@ -373,7 +359,6 @@ export const api = {
       
       return response.json();
     },
-    // Add this method to your MFA api object
     emergencySetup: async (userId: string) => {
       const mfaSetupToken = sessionStorage.getItem('mfa-setup-token');
       
@@ -406,7 +391,7 @@ export const api = {
       if (params.limit) queryParams.append('limit', params.limit.toString());
       if(params.action && params.action !== 'all') queryParams.append('action', params.action);
       
-      const response = await api.authFetch(`/activities?${queryParams.toString()}`); // Fix: add toString()
+      const response = await api.authFetch(`/activities?${queryParams.toString()}`); 
       return response.json();
     }
   },
@@ -453,7 +438,7 @@ export const api = {
 
     // Get all shares created by the current user
     listMyShares: async () => {
-      const response = await api.authFetch('/shares/myshares'); // Use authFetch instead of direct fetch
+      const response = await api.authFetch('/shares/myshares'); // Using authFetch instead
       return response.json();
     },
     
@@ -502,7 +487,6 @@ export const api = {
       return response.json();
     },
 
-    // --- Add this new function ---
     searchInvitees: async (teamId: string, searchTerm: string): Promise<User[]> => {
       const queryParams = new URLSearchParams({ search: searchTerm });
       const response = await api.authFetch(`/teams/${teamId}/search-invitees?${queryParams.toString()}`);
@@ -512,21 +496,18 @@ export const api = {
       }
       return response.json();
     },
-    // --- End new function ---
 
-    // --- Modify inviteMember ---
-    inviteMember: async (teamId: string, userId: number, role: string) => { // Changed email to userId (number)
+    inviteMember: async (teamId: string, userId: number, role: string) => {
       const response = await api.authFetch(`/teams/${teamId}/invite`, {
         method: 'POST',
         body: JSON.stringify({ userId, role }) // Send userId instead of email
       });
-      if (!response.ok) { // Add error handling
+      if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to invite member');
       }
       return response.json();
     },
-    // --- End modification ---
 
     updateStorageQuota: async (teamId: string, storageQuota: number) => {
       const response = await api.authFetch(`/teams/${teamId}/quota`, {
@@ -566,7 +547,6 @@ export const api = {
       const response = await api.authFetch(`/teams/${teamId}/members/${memberId}`, {
         method: 'DELETE'
       });
-      // Add error handling
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to remove member');
@@ -574,13 +554,11 @@ export const api = {
       return response.json();
     },
 
-    // Update member role
     updateMemberRole: async (teamId: string, memberId: string, role: string) => {
       const response = await api.authFetch(`/teams/${teamId}/members/${memberId}/role`, {
         method: 'PUT',
         body: JSON.stringify({ role })
       });
-      // Add error handling
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update role');
@@ -593,7 +571,6 @@ export const api = {
       const response = await api.authFetch(`/teams/${teamId}/members/${memberId}/resend`, {
         method: 'POST'
       });
-      // Add error handling
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to resend invite');
@@ -606,7 +583,6 @@ export const api = {
       const response = await api.authFetch(`/teams/${teamId}/files/${fileId}`, {
         method: 'DELETE'
       });
-      // Add error handling
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete file');
@@ -617,7 +593,6 @@ export const api = {
     // Get team settings
     getSettings: async (teamId: string) => {
       const response = await api.authFetch(`/teams/${teamId}/settings`);
-      // Add error handling
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to get settings');
@@ -631,14 +606,12 @@ export const api = {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          // Include sensitive op token if available
           ...(sessionStorage.getItem('sensitive-op-token') && {
             'sensitive-op-token': sessionStorage.getItem('sensitive-op-token') || ''
           })
         },
         body: JSON.stringify(settings)
       });
-      // Clear token after use
       sessionStorage.removeItem('sensitive-op-token');
 
       if (!response.ok) {
@@ -657,7 +630,6 @@ export const api = {
       const response = await api.authFetch(`/teams/${teamId}`, {
         method: 'DELETE',
         headers: {
-          // Include sensitive op token if available
           ...(sessionStorage.getItem('sensitive-op-token') && {
             'sensitive-op-token': sessionStorage.getItem('sensitive-op-token') || ''
           })
@@ -713,7 +685,6 @@ export const api = {
       return response.json();
     },
 
-    // Request password reset
     forgotPassword: async (email: string) => {
       const response = await fetch(`${API_URL}/user/forgot-password`, {
         method: 'POST',
@@ -731,7 +702,6 @@ export const api = {
       return response.json();
     },
     
-    // Reset password with token
     resetPassword: async (token: string, password: string) => {
       const response = await fetch(`${API_URL}/auth/reset-password/${token}`, {
         method: 'POST',
@@ -770,26 +740,21 @@ export const api = {
       return response.json();
     },
 
-    // --- Add function to get current user's activity logs ---
     getActivityLogs: async (params: { page?: number; limit?: number; action?: string } = {}) => {
       const queryParams = new URLSearchParams();
-      // Add parameters to query string if they exist
       if (params.page !== undefined) queryParams.append('page', params.page.toString());
       if (params.limit !== undefined) queryParams.append('limit', params.limit.toString());
       if (params.action) queryParams.append('action', params.action);
 
-      // Call the non-admin endpoint /api/activities
       const response = await api.authFetch(`/activities?${queryParams.toString()}`); // #file:activities.js
 
       if (!response.ok) {
-         // Try to parse error message from backend, provide default if parsing fails
+         
          const errorData = await response.json().catch(() => ({ error: 'Failed to load activity logs' }));
          throw new Error(errorData.error || 'Failed to load activity logs');
       }
-      // The backend route /api/activities returns { logs: [], total: number, page: number, limit: number, totalPages: number }
       return response.json();
     },
-    // --- End Add ---
   },
   admin: {
     // User management
@@ -827,7 +792,7 @@ export const api = {
       return response.json();
     },
 
-    // --- Add this function ---
+    
     deleteFile: async (fileId: string) => {
       const response = await api.authFetch(`/admin/files/${fileId}`, {
         method: 'DELETE',
@@ -836,9 +801,8 @@ export const api = {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete file');
       }
-      return response.json(); // Expect { message: '...' }
+      return response.json(); 
     },
-    // --- End ---
 
     // List all files
     listAllFiles: async (params: { page?: number; limit?: number; search?: string } = {}) => {
@@ -960,7 +924,6 @@ export const api = {
       return response.json();
     }
   },
-  // Add to your existing API object
   vault: {
     list: async (): Promise<VaultFile[]> => {
       const response = await api.authFetch('/vault/list');
@@ -970,9 +933,9 @@ export const api = {
       return response.json();
     },
     
-    // --- Modify add function ---
+    
     add: async (fileId: string, pin: string, options?: { selfDestruct?: boolean, destructAfter?: Date | null }) => {
-      // --- Remove fileId from body, it's now in the URL ---
+      
       const body: any = { pin }; // Only send pin and options in body
       if (options?.selfDestruct !== undefined) {
         body.selfDestruct = options.selfDestruct;
@@ -982,13 +945,13 @@ export const api = {
         body.destructAfter = options.destructAfter.toISOString();
       }
 
-      // --- Include fileId in the URL path ---
-      const response = await api.authFetch(`/vault/add/${fileId}`, { // #file:vault.js line 16
+      
+      const response = await api.authFetch(`/vault/add/${fileId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      // --- End URL Change ---
+      
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Failed to add file to vault' }));
@@ -996,7 +959,7 @@ export const api = {
       }
       return response.json();
     },
-    // --- End Modify ---
+   
 
     access: async (vaultFileId: string, pin: string) => {
       const response = await api.authFetch(`/vault/access/${vaultFileId}`, {
@@ -1015,7 +978,7 @@ export const api = {
     },
     
     remove: async (vaultFileId: string) => {
-      // Correct the URL here: remove the '/remove' segment
+      
       const response = await api.authFetch(`/vault/${vaultFileId}`, { method: 'DELETE' }); 
       if (!response.ok) {
          const errorData = await response.json();
@@ -1033,8 +996,6 @@ export const api = {
     }
   }
 };
-
-// Add User interface if not already defined globally
 interface User {
   id: number;
   username: string;

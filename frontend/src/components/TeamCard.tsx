@@ -1,9 +1,7 @@
 import React from 'react';
 import { Users, Lock, HardDrive, Info as InfoIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Button } from './Button'; // Assuming Button is a custom component
-
-// Removed duplicate ButtonProps interface as it should be defined in the Button component
+import { Button } from './Button';
 
 interface TeamCardProps {
   team: {
@@ -13,7 +11,7 @@ interface TeamCardProps {
     currentUsage: number;
     storageQuota: number;
     role: 'owner' | 'admin' | 'member';
-    status?: 'active' | 'invited'; // Add status field
+    status?: 'active' | 'invited';
   };
   onView: () => void;
 }
@@ -87,7 +85,6 @@ export function TeamCard({ team, onView }: TeamCardProps) {
         </div>
       </div>
 
-      {/* For the action button at the bottom */}
       <div className="p-4 border-t border-gray-100">
         <Button
           variant="outline"

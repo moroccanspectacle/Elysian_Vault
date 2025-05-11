@@ -232,14 +232,13 @@ export function Dashboard() {
         }
       };
 
-      // Modify handleMoveToVault
       const handleMoveToVault = (fileId: string) => {
-        setPinActionFileId(fileId); // Store the file ID
-        setPinError(null); // Clear previous errors
-        setShowPinModal(true); // Open the PIN modal
+        setPinActionFileId(fileId);
+        setPinError(null); 
+        setShowPinModal(true);
       };
 
-      // New function to handle PIN submission for adding to vault
+      //  function to handle PIN submission for adding to vault
       const submitMoveToVaultWithPin = async (pin: string, selfDestruct?: boolean, destructAfter?: Date | null) => { // Update signature
         if (!pinActionFileId) return;
 
@@ -247,9 +246,9 @@ export function Dashboard() {
             // Pass self-destruct options to API call
             await api.vault.add(pinActionFileId, pin, { selfDestruct, destructAfter }); // #file:api.ts line 911
             toast.success('File moved to vault successfully!');
-            setShowPinModal(false); // Close modal on success
+            setShowPinModal(false);
             setPinActionFileId(null);
-            fetchFiles(); // Refresh file list
+            fetchFiles();
         } catch (error: any) {
             console.error('Failed to move file to vault:', error);
             // Throw the error so the modal can display it
@@ -257,7 +256,7 @@ export function Dashboard() {
         }
     };
 
-    // Add this to completely bail out if not on dashboard
+    //completely bail out if not on dashboard
     if (location.pathname !== '/dashboard') {
       return null;
     }
@@ -266,7 +265,7 @@ export function Dashboard() {
       <>
         <Layout 
           onFileUploaded={() => {
-            if (currentView === 'files') fetchFiles(); // Refresh files if in files view
+            if (currentView === 'files') fetchFiles();
           }}
         >
           <AnimatePresence mode="wait">
@@ -404,10 +403,10 @@ export function Dashboard() {
 
         {/* Add the PinEntryModal */}
         <PinEntryModal
-            isOpen={showPinModal && !!pinActionFileId} // Only open if fileId is set
+            isOpen={showPinModal && !!pinActionFileId}
             onClose={() => {
                 setShowPinModal(false);
-                setPinActionFileId(null); // Clear fileId on close
+                setPinActionFileId(null);
             }}
             onSubmit={submitMoveToVaultWithPin}
             title="Set Vault Access PIN"

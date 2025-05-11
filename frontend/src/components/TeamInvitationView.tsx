@@ -42,7 +42,6 @@ export function TeamInvitationView({
     try {
       setIsDeclining(true);
       await api.notifications.declineInvitation(invitationId);
-      // Go back to teams list
       navigate('/teams');
     } catch (err) {
       console.error('Failed to decline invitation:', err);

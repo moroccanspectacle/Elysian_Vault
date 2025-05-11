@@ -45,8 +45,8 @@ export function CreateTeamModal({ onClose, onTeamCreated }: CreateTeamModalProps
         name: newTeam.name,
         description: newTeam.description || "",
         currentUsage: newTeam.currentUsage || 0,
-        storageQuota: newTeam.storageQuota, // Use quota from backend response
-        role: newTeam.role || "owner" // Assuming creator is owner
+        storageQuota: newTeam.storageQuota,
+        role: newTeam.role || "owner"
       };
       
       onTeamCreated(formattedTeam);

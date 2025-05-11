@@ -6,7 +6,7 @@ import { api } from '../services/api';
 interface FileUploadModalProps {
   onClose: () => void;
   onSuccess: (fileData: any) => void;
-  teamId?: string; // Accept teamId as a prop
+  teamId?: string;
 }
 
 export function FileUploadModal({ onClose, onSuccess, teamId }: FileUploadModalProps) {
@@ -14,7 +14,7 @@ export function FileUploadModal({ onClose, onSuccess, teamId }: FileUploadModalP
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [maxFileSize, setMaxFileSize] = useState<number>(50); // Default 50MB
+  const [maxFileSize, setMaxFileSize] = useState<number>(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMaxFileSize = async () => {
@@ -77,7 +77,7 @@ export function FileUploadModal({ onClose, onSuccess, teamId }: FileUploadModalP
     } catch (err) {
       console.error('Upload error:', err);
       setError(err instanceof Error ? err.message : 'Upload failed');
-      setUploading(false); // Keep modal open on error
+      setUploading(false);
     }
   };
 

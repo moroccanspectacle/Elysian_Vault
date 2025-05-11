@@ -46,7 +46,7 @@ export function SharedLinksPage() {
   const toggleShareStatus = async (id: number, currentStatus: boolean) => {
     try {
       await api.shares.updateStatus(id, !currentStatus);
-      // Update local state to reflect the change
+      
       setSharedLinks(sharedLinks.map(link => 
         link.id === id ? { ...link, isActive: !currentStatus } : link
       ));
